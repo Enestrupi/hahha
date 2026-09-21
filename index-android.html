@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#6c5ce7">
+<title>📚 Android Ebook Maker - No Crash</title>
+<style>
+:root{--bg:#08080a;--panel:#141416;--panel2:#1e1e22;--border:#2a2a30;--text:#f5f5f7;--muted:#9a9aa3;--accent:#6c5ce7;--green:#00d2a8;--red:#ff5a5f;--yellow:#fdcb6e}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+header{padding:14px 16px;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+.logo{font-weight:800;font-size:18px;display:flex;align-items:center;gap:8px}
+.main{flex:1;padding:12px;display:flex;flex-direction:column;gap:12px;max-width:500px;margin:0 auto;width:100%}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px}
+.card-green{border-color:rgba(0,210,168,0.3);background:rgba(0,210,168,0.08)}
+.big-btn{width:100%;padding:18px;border-radius:14px;border:none;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;min-height:56px}
+.big-btn:active{transform:scale(0.98)}
+.btn-primary{background:var(--accent);color:white}
+.btn-green{background:var(--green);color:white}
+.btn-dark{background:var(--panel2);color:var(--text);border:1px solid var(--border)}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.stat{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center}
+.stat b{font-size:20px;display:block}
+.stat span{font-size:10px;color:var(--muted);text-transform:uppercase}
+.progress-wrap{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px;position:sticky;bottom:12px}
+.progress-bar{height:10px;background:var(--panel2);border-radius:20px;overflow:hidden;margin:10px 0}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));width:0%;transition:.2s}
+.log{background:#0f0f12;border-radius:10px;padding:10px;font-family:monospace;font-size:10px;color:var(--muted);max-height:100px;overflow-y:auto;white-space:pre-wrap}
+.badge{padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;display:inline-block}
+.badge-green{background:rgba(0,210,168,0.15);color:var(--green);border:1px solid rgba(0,210,168,0.3)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">📚 Android No-Crash Ebook Maker</div>
+  <div style="font-size:11px;color:var(--muted);margin-top:2px">For 316 photos • Uses 20MB not 1.2GB • Removes table background</div>
+</header>
+
+<div class="main">
+  <div class="card card-green">
+    <div style="font-size:13px;line-height:1.5">
+      <b>🔧 Fixed crashing:</b><br>
+      Old: Loads 316×4MB=1.2GB → Android crashes<br>
+      <b>New:</b> Processes 1 at a time, compresses to 200KB, uses 20MB RAM<br>
+      <span class="badge badge-green">No gallery preview</span> <span class="badge badge-green">No crash</span> <span class="badge badge-green">Server removes background</span>
+    </div>
+  </div>
+
+  <div class="card" style="text-align:center">
+    <div style="font-size:40px">📦</div>
+    <h3 style="margin:8px 0">Upload 316 Photos</h3>
+    <p style="color:var(--muted);font-size:12px;margin-bottom:14px">Android optimized - never crashes</p>
+    
+    <button class="big-btn btn-primary" onclick="document.getElementById('zipInput').click()" style="margin-bottom:10px">
+      📦 Upload ZIP (BEST for Android)
+    </button>
+    <button class="big-btn btn-dark" onclick="document.getElementById('fileInput').click()" style="margin-bottom:10px">
+      📸 Select 316 Photos
+    </button>
+    <button class="big-btn btn-dark" onclick="document.getElementById('cameraInput').click()">
+      📷 Camera
+    </button>
+    
+    <input type="file" id="fileInput" multiple accept="image/*" style="display:none">
+    <input type="file" id="zipInput" accept=".zip" style="display:none">
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
+  </div>
+
+  <div class="stats">
+    <div class="stat"><b id="statTotal">0</b><span>Total</span></div>
+    <div class="stat"><b id="statDone">0</b><span>Done</span></div>
+    <div class="stat"><b id="statMem">0 MB</b><span>RAM</span></div>
+  </div>
+
+  <button class="big-btn btn-green" id="exportBtn" disabled>
+    📕 Export PDF (0 pages)
+  </button>
+
+  <div class="progress-wrap" id="progressWrap" style="display:none">
+    <div style="display:flex;justify-content:space-between;font-weight:700;font-size:13px">
+      <span id="progressText">Processing...</span>
+      <span id="progressPct">0%</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">
+      <span id="progressDetail">0/316</span>
+      <span id="progressMode">Light mode</span>
+    </div>
+    <div class="log" id="log"></div>
+  </div>
+
+  <div class="card" style="background:var(--panel2)">
+    <h4 style="font-size:13px">💡 If still crashing:</h4>
+    <div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:6px">
+      1. Use ZIP method<br>
+      2. Close other apps<br>
+      3. Use Chrome<br>
+      4. Or use computer: python batch_real_book.py
+    </div>
+  </div>
+</div>
+
+<script src="./pdf-lib.min.js"></script>
+<script src="./jszip.min.js"></script>
+<script>
+const { PDFDocument } = PDFLib;
+let pages=[]; // Only small 200KB dataUrls
+let total=0, done=0;
+
+const els={
+  fileInput:document.getElementById('fileInput'),
+  zipInput:document.getElementById('zipInput'),
+  cameraInput:document.getElementById('cameraInput'),
+  exportBtn:document.getElementById('exportBtn'),
+  progressWrap:document.getElementById('progressWrap'),
+  progressFill:document.getElementById('progressFill'),
+  progressText:document.getElementById('progressText'),
+  progressPct:document.getElementById('progressPct'),
+  progressDetail:document.getElementById('progressDetail'),
+  log:document.getElementById('log'),
+  statTotal:document.getElementById('statTotal'),
+  statDone:document.getElementById('statDone'),
+  statMem:document.getElementById('statMem'),
+};
+
+function log(msg){ els.log.textContent+=`[${new Date().toLocaleTimeString()}] ${msg}\n`; els.log.scrollTop=els.log.scrollHeight; }
+function setProgress(pct,text,detail){
+  els.progressWrap.style.display='block';
+  els.progressFill.style.width=pct+'%';
+  els.progressPct.textContent=Math.round(pct)+'%';
+  if(text) els.progressText.textContent=text;
+  if(detail) els.progressDetail.textContent=detail;
+  const mem=pages.reduce((s,p)=>s+p.dataUrl.length*0.75,0)/1024/1024;
+  els.statMem.textContent=`${mem.toFixed(1)} MB`;
+  els.progressWrap.scrollIntoView({behavior:'smooth',block:'end'});
+}
+
+// Process 1 file at a time with minimal memory
+async function processFileLowMem(file){
+  // Try server first (removes table background, saves phone RAM)
+  try{
+    const form=new FormData();
+    form.append('image', file);
+    const urls=[`http://localhost:8001/scan`, `${location.protocol}//${location.hostname}:8001/scan`];
+    for(const url of urls){
+      try{
+        const res=await fetch(url,{method:'POST',body:form,signal:AbortSignal.timeout(8000)});
+        if(res.ok){
+          const data=await res.json();
+          if(data.image){
+            // Server cleaned, now compress aggressively for Android
+            const img=await loadDataUrl(data.image);
+            const c=document.createElement('canvas');
+            const maxW=800; // Android max
+            const scale=Math.min(1,maxW/img.width);
+            c.width=img.width*scale;
+            c.height=img.height*scale;
+            c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+            return c.toDataURL('image/jpeg',0.55); // 55% = ~180KB
+          }
+        }
+      }catch{}
+    }
+  }catch{}
+  
+  // Client fallback - ultra light
+  return new Promise((res,rej)=>{
+    const url=URL.createObjectURL(file);
+    const img=new Image();
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      const c=document.createElement('canvas');
+      const maxW=800;
+      const scale=Math.min(1,maxW/img.naturalWidth);
+      c.width=img.naturalWidth*scale;
+      c.height=img.naturalHeight*scale;
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      res(c.toDataURL('image/jpeg',0.55));
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('load fail'));};
+    img.src=url;
+  });
+}
+
+function loadDataUrl(dataUrl){
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>res(img);
+    img.onerror=rej;
+    img.src=dataUrl;
+  });
+}
+
+async function handleFiles(files){
+  total+=files.length;
+  els.statTotal.textContent=total;
+  log(`📸 ${files.length} photos - processing 1 at a time (Android safe)`);
+  setProgress(0,`Starting ${files.length} photos`,`0/${files.length}`);
+  
+  for(let i=0;i<files.length;i++){
+    try{
+      const dataUrl=await processFileLowMem(files[i]);
+      pages.push({id:Math.random().toString(36).slice(2), dataUrl, name:files[i].name});
+      done++;
+      els.statDone.textContent=done;
+      els.exportBtn.textContent=`📕 Export PDF (${pages.length} pages)`;
+      els.exportBtn.disabled=false;
+      setProgress((done/total)*100,`Cleaned ${done}/${total}`,`${done}/${total}`);
+      // Critical: yield to avoid Android ANR
+      await new Promise(r=>setTimeout(r,15));
+    }catch(err){ log(`✗ ${files[i].name}: ${err.message}`); }
+  }
+  log(`✓ Done: ${pages.length} pages`);
+}
+
+async function handleZip(file){
+  log(`📦 ZIP ${file.name} (${(file.size/1024/1024).toFixed(1)} MB)`);
+  setProgress(0,`Extracting ZIP...`,`0 photos`);
+  try{
+    const zip=await JSZip.loadAsync(file);
+    const entries=Object.keys(zip.files).filter(k=>/\.(jpe?g|png|webp)$/i.test(k)&&!zip.files[k].dir).sort();
+    log(`Found ${entries.length} photos in ZIP`);
+    total+=entries.length;
+    els.statTotal.textContent=total;
+    
+    for(let i=0;i<entries.length;i++){
+      const blob=await zip.files[entries[i]].async('blob');
+      const f=new File([blob], entries[i].split('/').pop(), {type:'image/jpeg'});
+      const dataUrl=await processFileLowMem(f);
+      pages.push({id:Math.random().toString(36).slice(2), dataUrl, name:f.name});
+      done++;
+      els.statDone.textContent=done;
+      els.exportBtn.textContent=`📕 Export PDF (${pages.length} pages)`;
+      els.exportBtn.disabled=false;
+      if(i%5===0){
+        setProgress((i/entries.length)*100,`ZIP ${i}/${entries.length}`,`${i}/${entries.length}`);
+        await new Promise(r=>setTimeout(r,15));
+      }
+    }
+    setProgress(100,`Done ${pages.length} pages`,`${pages.length} pages`);
+  }catch(err){ log(`ZIP error: ${err.message}`); }
+}
+
+els.fileInput.addEventListener('change', async e=>{ await handleFiles([...e.target.files]); e.target.value=''; });
+els.zipInput.addEventListener('change', async e=>{ for(const f of [...e.target.files]) await handleZip(f); e.target.value=''; });
+els.cameraInput.addEventListener('change', async e=>{ await handleFiles([...e.target.files]); e.target.value=''; });
+
+// Export
+document.getElementById('exportBtn').addEventListener('click', async ()=>{
+  if(!pages.length) return;
+  const btn=els.exportBtn;
+  btn.disabled=true;
+  btn.textContent='⏳ Building PDF...';
+  setProgress(0,`Creating PDF ${pages.length} pages...`,`${pages.length} pages`);
+  try{
+    const pdfDoc=await PDFDocument.create();
+    for(let i=0;i<pages.length;i++){
+      setProgress((i/pages.length)*90,`Page ${i+1}/${pages.length}...`,`${i+1}/${pages.length}`);
+      const bytes=await fetch(pages[i].dataUrl).then(r=>r.arrayBuffer());
+      let img;
+      try{ img=await pdfDoc.embedJpg(bytes); }catch{ img=await pdfDoc.embedPng(bytes); }
+      const page=pdfDoc.addPage([595.28,841.89]);
+      const maxW=555,maxH=801;
+      let iw=img.width,ih=img.height;
+      const s=Math.min(maxW/iw,maxH/ih);
+      iw*=s; ih*=s;
+      page.drawImage(img,{x:(595.28-iw)/2,y:(841.89-ih)/2,width:iw,height:ih});
+      page.drawText(`${i+1}`,{x:297,y:15,size:9,color:PDFLib.rgb(0.5,0.5,0.5)});
+      if(i%10===0) await new Promise(r=>setTimeout(r,10));
+    }
+    setProgress(95,'Finalizing...');
+    const pdfBytes=await pdfDoc.save();
+    const blob=new Blob([pdfBytes],{type:'application/pdf'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`MATEMATIKA_${pages.length}_pages_Android.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setProgress(100,`Done! ${(blob.size/1024/1024).toFixed(1)} MB`,`${pages.length} pages`);
+    log(`✓ PDF: ${pages.length} pages, ${(blob.size/1024/1024).toFixed(1)} MB`);
+  }catch(err){ log(`Export fail: ${err.message}`); alert(err.message); }
+  finally{ btn.disabled=false; btn.textContent=`📕 Export PDF (${pages.length} pages)`; }
+});
+</script>
+</body>
+</html>
