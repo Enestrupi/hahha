@@ -74,3 +74,8 @@ MIT - Free for educational use
 ## 🙏 Credits
 
 Built for MATEMATIKA II textbook scanning - turns physical book photos into clean digital ebook like the example with blue sky cover.
+
+## 🌐 Live Demo
+
+After pushing to GitHub, enable GitHub Pages in Settings → Pages → Deploy from branch: main
+Then your app will be live at: `https://Enestrupi.github.io/hahha/index-bulk-316.html`
