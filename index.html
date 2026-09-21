@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Ebook Maker - 316 Photos to PDF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+:root{
+  --bg:#0a0a0b;
+  --panel:#151518;
+  --panel2:#1e1e22;
+  --border:#2a2a30;
+  --text:#f5f5f7;
+  --muted:#9a9aa3;
+  --accent:#6c5ce7;
+  --accent2:#a29bfe;
+  --green:#00d2a8;
+  --red:#ff5a5f;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow:hidden;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+header{
+  height:56px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 20px;
+  background:var(--panel);
+}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:grid;place-items:center;font-size:18px}
+.header-actions{display:flex;gap:10px}
+.btn{
+  padding:10px 18px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--panel2);
+  color:var(--text);
+  cursor:pointer;
+  font-weight:600;
+  font-size:13px;
+  transition:.2s;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+}
+.btn:hover{border-color:var(--accent2);transform:translateY(-1px)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:white}
+.btn-primary:hover{background:#5a4bd1}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+main{display:flex;flex:1;overflow:hidden}
+.sidebar{
+  width:300px;
+  background:var(--panel);
+  border-right:1px solid var(--border);
+  padding:20px;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+  gap:20px;
+}
+.main-content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.drop-zone{
+  margin:16px;
+  border:2px dashed #3a3a44;
+  border-radius:16px;
+  padding:30px;
+  text-align:center;
+  background:linear-gradient(180deg, rgba(108,92,231,0.08), transparent);
+  cursor:pointer;
+  transition:.2s;
+}
+.drop-zone.drag{border-color:var(--accent2);background:rgba(108,92,231,0.15);transform:scale(1.01)}
+.drop-zone h3{font-size:18px;margin-bottom:8px}
+.drop-zone p{color:var(--muted);font-size:13px;line-height:1.5}
+.upload-icon{font-size:42px;margin-bottom:12px}
+.settings-group{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.settings-group h4{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+.input, .select{
+  width:100%;
+  padding:10px 12px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:#0f0f12;
+  color:var(--text);
+  font-size:13px;
+}
+.row{display:flex;gap:10px}
+.row > *{flex:1}
+.toggle{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:13px;
+}
+.switch{width:36px;height:20px;background:#333;border-radius:20px;position:relative;cursor:pointer;transition:.2s}
+.switch.on{background:var(--accent)}
+.switch::after{content:'';position:absolute;width:16px;height:16px;background:white;border-radius:50%;top:2px;left:2px;transition:.2s}
+.switch.on::after{left:18px}
+.stats{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px
+}
+.stat{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px}
+.stat b{font-size:20px;display:block}
+.stat span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.gallery{
+  flex:1;
+  overflow-y:auto;
+  padding:0 16px 16px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:12px;
+  align-content:start;
+}
+.page-card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:12px;
+  overflow:hidden;
+  position:relative;
+  group:true;
+  transition:.2s;
+}
+.page-card:hover{border-color:var(--accent2);transform:translateY(-2px)}
+.page-card img{width:100%;aspect-ratio:0.71;display:block;object-fit:contain;background:white}
+.page-info{padding:8px 10px;display:flex;justify-content:space-between;align-items:center;font-size:11px}
+.page-num{color:var(--muted)}
+.page-actions{display:flex;gap:4px}
+.icon-btn{width:22px;height:22px;border-radius:6px;border:1px solid var(--border);background:var(--panel2);cursor:pointer;display:grid;place-items:center;font-size:12px}
+.icon-btn:hover{background:var(--accent);color:white}
+.progress-wrap{padding:12px 16px;border-top:1px solid var(--border);background:var(--panel)}
+.progress-bar{height:6px;background:var(--panel2);border-radius:10px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%;transition:.3s}
+.log{font-family:monospace;font-size:11px;color:var(--muted);max-height:80px;overflow-y:auto;margin-top:8px;background:#0f0f12;padding:8px;border-radius:8px}
+.split-preview{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100;display:none;place-items:center;padding:20px}
+.split-preview.active{display:grid}
+.split-inner{background:var(--panel);border-radius:16px;max-width:900px;width:100%;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;border:1px solid var(--border)}
+.split-canvas-wrap{flex:1;overflow:auto;background:#111;display:grid;place-items:start center;padding:20px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="logo-icon">📚</div> AI Ebook Maker <span style="color:var(--muted);font-weight:400;font-size:13px;margin-left:8px">316 photos → 1 ebook</span></div>
+  <div class="header-actions">
+    <button class="btn" id="clearBtn">🗑️ Clear</button>
+    <button class="btn" id="demoBtn">👁️ View Example</button>
+    <button class="btn btn-primary" id="exportBtn" disabled>📕 Export PDF Ebook</button>
+  </div>
+</header>
+<main>
+  <aside class="sidebar">
+    <div class="settings-group">
+      <h4>📖 Ebook Details</h4>
+      <input class="input" id="bookTitle" placeholder="Ebook Title" value="MATEMATIKA VIII II - ARSIMI I GJIMNAZIT">
+      <input class="input" id="bookAuthor" placeholder="Author" value="Borivoje Miladinoviq, Trajce Gjorgjievski">
+      <div class="row">
+        <select class="select" id="pageSize">
+          <option value="A4" selected>A4 (210×297)</option>
+          <option value="A5">A5 (148×210)</option>
+          <option value="LETTER">Letter</option>
+          <option value="ORIGINAL">Original Size</option>
+        </select>
+        <select class="select" id="quality">
+          <option value="0.9" selected>High Quality</option>
+          <option value="0.7">Medium</option>
+          <option value="0.5">Small Size</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <h4>🤖 AI Processing</h4>
+      <div class="toggle"><span>Auto-split tall screenshots</span><div class="switch on" id="autoSplitToggle"></div></div>
+      <div class="toggle"><span>Auto-crop black borders</span><div class="switch on" id="autoCropToggle"></div></div>
+      <div class="toggle"><span>Enhance (contrast + sharpen)</span><div class="switch on" id="enhanceToggle"></div></div>
+      <div class="toggle"><span>Detect & remove duplicates</span><div class="switch on" id="dedupToggle"></div></div>
+      <div style="font-size:11px;color:var(--muted);line-height:1.4">AI will detect horizontal white gaps and black separator lines to split your long screenshots (like your 3-of-226 example) into single pages automatically.</div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b id="statInput">0</b><span>Input Images</span></div>
+      <div class="stat"><b id="statPages">0</b><span>Pages Ready</span></div>
+      <div class="stat"><b id="statSize">0 MB</b><span>Est. PDF Size</span></div>
+      <div class="stat"><b id="statStatus" style="color:var(--green)">Ready</b><span>Status</span></div>
+    </div>
+
+    <div class="settings-group">
+      <h4>How it works</h4>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6">
+        1. Drop 316 photos (PNG/JPG)<br>
+        2. AI splits tall screenshots → single pages<br>
+        3. Reorder / delete / rotate<br>
+        4. Export as searchable PDF ebook<br><br>
+        <b style="color:var(--text)">For your example:</b> One tall image with 5 pages stacked vertically → AI finds the black lines & white gaps and splits into 5 separate pages.
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <h4>Batch Python (Alternative)</h4>
+      <div style="font-size:11px;color:var(--muted)">For 316+ images, use the Python script for faster offline processing. See <code>batch_processor.py</code></div>
+      <button class="btn" style="width:100%" onclick="document.getElementById('batchCode').style.display='block'">Show Python Code</button>
+      <pre id="batchCode" style="display:none;font-size:10px;background:#0f0f12;padding:10px;border-radius:8px;overflow:auto;white-space:pre-wrap">pip install Pillow
+python batch_processor.py --input ./photos --output ebook.pdf --auto-split --enhance</pre>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="drop-zone" id="dropZone">
+      <div class="upload-icon">📸</div>
+      <h3>Drop your 316 photos here</h3>
+      <p>Supports JPG, PNG, WEBP. You can drop folders, multiple files, or tall screenshots like your example.<br>
+      <b>AI will auto-split</b> long vertical screenshots into individual book pages.</p>
+      <input type="file" id="fileInput" multiple accept="image/*" style="display:none">
+      <div style="margin-top:14px;display:flex;gap:8px;justify-content:center">
+        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">Select Photos</button>
+        <button class="btn" id="pasteBtn">📋 Paste from Clipboard</button>
+      </div>
+    </div>
+
+    <div class="gallery" id="gallery"></div>
+
+    <div class="progress-wrap" id="progressWrap" style="display:none">
+      <div style="display:flex;justify-content:space-between;font-size:12px">
+        <span id="progressText">Processing...</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+</main>
+
+<div class="split-preview" id="splitPreview">
+  <div class="split-inner">
+    <div style="padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <h3 id="splitTitle">Split Preview</h3>
+      <button class="btn" onclick="document.getElementById('splitPreview').classList.remove('active')">Close</button>
+    </div>
+    <div class="split-canvas-wrap"><canvas id="splitCanvas"></canvas></div>
+  </div>
+</div>
+
+<script src="./pdf-lib.min.js"></script>
+<script src="./jszip.min.js"></script>
+<script>
+const { PDFDocument } = PDFLib;
+
+let pages = []; // {id, dataUrl, width, height, originalName, blob}
+let settings = {
+  autoSplit: true,
+  autoCrop: true,
+  enhance: true,
+  dedup: true
+};
+
+const els = {
+  dropZone: document.getElementById('dropZone'),
+  fileInput: document.getElementById('fileInput'),
+  gallery: document.getElementById('gallery'),
+  exportBtn: document.getElementById('exportBtn'),
+  statInput: document.getElementById('statInput'),
+  statPages: document.getElementById('statPages'),
+  statSize: document.getElementById('statSize'),
+  statStatus: document.getElementById('statStatus'),
+  progressWrap: document.getElementById('progressWrap'),
+  progressFill: document.getElementById('progressFill'),
+  progressText: document.getElementById('progressText'),
+  progressPct: document.getElementById('progressPct'),
+  log: document.getElementById('log'),
+  bookTitle: document.getElementById('bookTitle'),
+};
+
+function log(msg){
+  els.log.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+  els.log.scrollTop = els.log.scrollHeight;
+}
+function setProgress(pct, text){
+  els.progressWrap.style.display = 'block';
+  els.progressFill.style.width = pct+'%';
+  els.progressPct.textContent = Math.round(pct)+'%';
+  if(text) els.progressText.textContent = text;
+}
+
+document.querySelectorAll('.switch').forEach(sw=>{
+  sw.addEventListener('click',()=>{
+    sw.classList.toggle('on');
+    const id = sw.id;
+    if(id==='autoSplitToggle') settings.autoSplit = sw.classList.contains('on');
+    if(id==='autoCropToggle') settings.autoCrop = sw.classList.contains('on');
+    if(id==='enhanceToggle') settings.enhance = sw.classList.contains('on');
+    if(id==='dedupToggle') settings.dedup = sw.classList.contains('on');
+  })
+});
+
+// Drag & Drop
+['dragenter','dragover'].forEach(ev=>{
+  els.dropZone.addEventListener(ev, e=>{
+    e.preventDefault();
+    els.dropZone.classList.add('drag');
+  })
+});
+['dragleave','drop'].forEach(ev=>{
+  els.dropZone.addEventListener(ev, e=>{
+    e.preventDefault();
+    els.dropZone.classList.remove('drag');
+  })
+});
+els.dropZone.addEventListener('drop', async e=>{
+  const files = [...e.dataTransfer.files].filter(f=>f.type.startsWith('image/'));
+  await handleFiles(files);
+});
+els.fileInput.addEventListener('change', async e=>{
+  await handleFiles([...e.target.files]);
+  e.target.value='';
+});
+els.dropZone.addEventListener('click', e=>{
+  if(e.target.tagName!=='BUTTON') document.getElementById('fileInput').click();
+});
+
+// Clipboard paste
+document.getElementById('pasteBtn').addEventListener('click', async ()=>{
+  try{
+    const items = await navigator.clipboard.read();
+    let files=[];
+    for(const item of items){
+      for(const type of item.types){
+        if(type.startsWith('image/')){
+          const blob = await item.getType(type);
+          files.push(new File([blob], `pasted-${Date.now()}.png`, {type}));
+        }
+      }
+    }
+    if(files.length) await handleFiles(files);
+    else log('No image in clipboard');
+  }catch(err){ log('Clipboard error: '+err.message); }
+});
+
+let inputCount=0;
+async function handleFiles(files){
+  if(!files.length) return;
+  inputCount += files.length;
+  els.statInput.textContent = inputCount;
+  els.statStatus.textContent = 'Processing';
+  els.statStatus.style.color = 'var(--accent2)';
+  setProgress(0, `Processing ${files.length} images...`);
+  
+  for(let i=0;i<files.length;i++){
+    const file = files[i];
+    setProgress((i/files.length)*80, `AI analyzing ${file.name} (${i+1}/${files.length})...`);
+    try{
+      const resultPages = await processImageFile(file);
+      for(const p of resultPages){
+        if(settings.dedup && isDuplicate(p)) {
+          log(`Duplicate detected, skipping: ${file.name}`);
+          continue;
+        }
+        pages.push(p);
+      }
+      log(`✓ ${file.name} → ${resultPages.length} page(s)`);
+    }catch(err){
+      log(`✗ Error ${file.name}: ${err.message}`);
+    }
+    // Yield to UI
+    await new Promise(r=>setTimeout(r,10));
+  }
+  
+  setProgress(100, `Done! ${pages.length} pages ready`);
+  renderGallery();
+  updateStats();
+  els.statStatus.textContent = 'Ready';
+  els.statStatus.style.color = 'var(--green)';
+  els.exportBtn.disabled = pages.length===0;
+  setTimeout(()=>{els.progressWrap.style.display='none'}, 2000);
+}
+
+function isDuplicate(newPage){
+  // simple hash by size + average color check could be added
+  // For now check exact dataUrl length duplicate (quick)
+  return pages.some(p=> Math.abs(p.dataUrl.length - newPage.dataUrl.length) < 100 && p.width===newPage.width && p.height===newPage.height);
+}
+
+async function processImageFile(file){
+  const img = await loadImageFromFile(file);
+  let canvases = [imageToCanvas(img)];
+  
+  // Step 1: Auto-crop black borders
+  if(settings.autoCrop){
+    canvases = canvases.map(c=> autoCropCanvas(c));
+  }
+  
+  let finalCanvases = [];
+  for(let canvas of canvases){
+    if(settings.autoSplit && canvas.height > canvas.width*1.4){
+      // Tall image -> try split
+      const splits = await detectAndSplit(canvas);
+      if(splits.length>1){
+        log(`  AI split detected: ${splits.length} pages in one image`);
+        finalCanvases.push(...splits);
+      }else{
+        finalCanvases.push(canvas);
+      }
+    }else{
+      finalCanvases.push(canvas);
+    }
+  }
+  
+  // Step 2: Enhance & convert to dataUrl
+  const result=[];
+  for(let c of finalCanvases){
+    if(settings.enhance){
+      c = enhanceCanvas(c);
+    }
+    const dataUrl = c.toDataURL('image/jpeg', parseFloat(document.getElementById('quality').value));
+    result.push({
+      id: Math.random().toString(36).slice(2),
+      dataUrl,
+      width: c.width,
+      height: c.height,
+      originalName: file.name,
+      blob: await new Promise(res=> c.toBlob(res, 'image/jpeg', 0.9))
+    });
+  }
+  return result;
+}
+
+function loadImageFromFile(file){
+  return new Promise((res,rej)=>{
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = ()=>{ URL.revokeObjectURL(url); res(img); };
+    img.onerror = rej;
+    img.src=url;
+  });
+}
+function imageToCanvas(img){
+  const c = document.createElement('canvas');
+  c.width = img.naturalWidth;
+  c.height = img.naturalHeight;
+  c.getContext('2d').drawImage(img,0,0);
+  return c;
+}
+
+function autoCropCanvas(canvas){
+  const ctx = canvas.getContext('2d');
+  const {width, height} = canvas;
+  const data = ctx.getImageData(0,0,width,height).data;
+  
+  let top=0,bottom=height-1,left=0,right=width-1;
+  const isBlack = (r,g,b)=> r<25 && g<25 && b<25;
+  const isContent = (x,y)=>{
+    const i=(y*width+x)*4;
+    const r=data[i],g=data[i+1],b=data[i+2];
+    return !isBlack(r,g,b); // anything not black is content
+  };
+  
+  // Find top
+  outer: for(let y=0;y<height;y++){
+    for(let x=0;x<width;x+=Math.max(1,Math.floor(width/100))){
+      if(isContent(x,y)){ top=y; break outer; }
+    }
+  }
+  outer: for(let y=height-1;y>=0;y--){
+    for(let x=0;x<width;x+=Math.max(1,Math.floor(width/100))){
+      if(isContent(x,y)){ bottom=y; break outer; }
+    }
+  }
+  outer: for(let x=0;x<width;x++){
+    for(let y=top;y<=bottom;y+=Math.max(1,Math.floor(height/100))){
+      if(isContent(x,y)){ left=x; break outer; }
+    }
+  }
+  outer: for(let x=width-1;x>=0;x--){
+    for(let y=top;y<=bottom;y+=Math.max(1,Math.floor(height/100))){
+      if(isContent(x,y)){ right=x; break outer; }
+    }
+  }
+  
+  // Add small margin, but ensure we don't crop too aggressively
+  const margin=10;
+  top=Math.max(0,top-margin);
+  left=Math.max(0,left-margin);
+  bottom=Math.min(height-1,bottom+margin);
+  right=Math.min(width-1,right+margin);
+  
+  const cropW = right-left+1;
+  const cropH = bottom-top+1;
+  if(cropW < width*0.5 || cropH < height*0.5){
+    // If crop is too small, return original (avoid overcrop)
+    return canvas;
+  }
+  const out = document.createElement('canvas');
+  out.width=cropW;
+  out.height=cropH;
+  out.getContext('2d').drawImage(canvas, left, top, cropW, cropH, 0,0,cropW,cropH);
+  return out;
+}
+
+async function detectAndSplit(canvas){
+  const W = canvas.width;
+  const H = canvas.height;
+  // Downscale for analysis for performance
+  const analysisWidth = 400;
+  const scale = analysisWidth / W;
+  const analysisHeight = Math.floor(H*scale);
+  const smallCanvas = document.createElement('canvas');
+  smallCanvas.width=analysisWidth;
+  smallCanvas.height=analysisHeight;
+  smallCanvas.getContext('2d').drawImage(canvas,0,0,analysisWidth,analysisHeight);
+  const ctx = smallCanvas.getContext('2d');
+  const imgData = ctx.getImageData(0,0,analysisWidth,analysisHeight);
+  const data = imgData.data;
+  
+  // For each row, compute white ratio and dark line ratio
+  const rowStats=[];
+  for(let y=0;y<analysisHeight;y++){
+    let whiteCount=0, blackCount=0, total=analysisWidth;
+    let sumBrightness=0;
+    for(let x=0;x<analysisWidth;x++){
+      const i=(y*analysisWidth+x)*4;
+      const r=data[i], g=data[i+1], b=data[i+2];
+      const bright = (r+g+b)/3;
+      sumBrightness+=bright;
+      if(bright>230) whiteCount++;
+      if(bright<30) blackCount++;
+    }
+    rowStats.push({
+      y,
+      whiteRatio: whiteCount/total,
+      blackRatio: blackCount/total,
+      avgBright: sumBrightness/total
+    });
+  }
+  
+  // Detect gaps: consecutive rows with high white ratio (>0.85) or high black ratio (separator line) followed by white
+  const gaps=[];
+  let inGap=false, gapStart=0;
+  for(let y=0;y<rowStats.length;y++){
+    const s=rowStats[y];
+    const isGapRow = s.whiteRatio>0.88 || (s.blackRatio>0.7 && s.whiteRatio<0.2) || s.avgBright>240;
+    if(isGapRow && !inGap){
+      inGap=true;
+      gapStart=y;
+    }else if(!isGapRow && inGap){
+      inGap=false;
+      const gapEnd=y;
+      const gapHeight=gapEnd-gapStart;
+      // Only consider gaps that are at least 12px in analysis scale and not at very top/bottom
+      if(gapHeight>12 && gapStart>20 && gapEnd<analysisHeight-20){
+        // Check if gap is significant - surrounded by content
+        gaps.push({start:gapStart, end:gapEnd, center:Math.floor((gapStart+gapEnd)/2)});
+      }
+    }
+  }
+  
+  // Filter gaps: need to be spaced reasonably (avoid splitting inside a page)
+  // Sort and merge close gaps
+  gaps.sort((a,b)=>a.center-b.center);
+  const filtered=[];
+  for(let g of gaps){
+    if(filtered.length===0 || g.center - filtered[filtered.length-1].center > 40){ // at least 40px apart in analysis scale
+      filtered.push(g);
+    }
+  }
+  
+  // If no gaps or only 1 page, return original
+  if(filtered.length===0) return [canvas];
+  
+  // Convert gap centers back to original scale
+  const splitYs = filtered.map(g=> Math.floor(g.center / scale)).sort((a,b)=>a-b);
+  
+  // Additional validation: ensure splits create pages with reasonable aspect ratio (taller than wide but not too tall)
+  const finalSplits=[];
+  let lastY=0;
+  for(let y of splitYs){
+    const h = y - lastY;
+    if(h > W*0.6){ // page should be at least 0.6*width tall
+      finalSplits.push({y0:lastY, y1:y});
+      lastY=y;
+    }
+  }
+  // Last piece
+  if(H - lastY > W*0.6){
+    finalSplits.push({y0:lastY, y1:H});
+  }
+  
+  if(finalSplits.length<=1) return [canvas];
+  
+  // Create canvases for each split
+  const out=[];
+  for(let s of finalSplits){
+    const ch = s.y1 - s.y0;
+    if(ch<50) continue;
+    const c = document.createElement('canvas');
+    c.width=W;
+    c.height=ch;
+    c.getContext('2d').drawImage(canvas, 0, s.y0, W, ch, 0,0,W,ch);
+    out.push(c);
+  }
+  return out.length?out:[canvas];
+}
+
+function enhanceCanvas(canvas){
+  // Simple contrast + sharpen via canvas filter
+  const out = document.createElement('canvas');
+  out.width=canvas.width;
+  out.height=canvas.height;
+  const ctx = out.getContext('2d');
+  ctx.filter='contrast(1.15) brightness(1.05) saturate(0)';
+  ctx.drawImage(canvas,0,0);
+  ctx.filter='none';
+  // Slight sharpen via unsharp mask approximation: draw slightly offset with low opacity? For simplicity skip heavy processing
+  return out;
+}
+
+function renderGallery(){
+  els.gallery.innerHTML='';
+  pages.forEach((p, idx)=>{
+    const card = document.createElement('div');
+    card.className='page-card';
+    card.innerHTML=`
+      <img src="${p.dataUrl}" loading="lazy">
+      <div class="page-info">
+        <span class="page-num">#${idx+1} • ${p.width}×${p.height}</span>
+        <div class="page-actions">
+          <button class="icon-btn" title="Rotate" onclick="rotatePage('${p.id}')">↻</button>
+          <button class="icon-btn" title="View" onclick="viewPage('${p.id}')">👁️</button>
+          <button class="icon-btn" title="Delete" onclick="deletePage('${p.id}')">✕</button>
+        </div>
+      </div>
+    `;
+    // Drag to reorder
+    card.draggable=true;
+    card.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/plain', p.id); });
+    card.addEventListener('dragover', e=> e.preventDefault());
+    card.addEventListener('drop', e=>{
+      e.preventDefault();
+      const draggedId = e.dataTransfer.getData('text/plain');
+      const draggedIdx = pages.findIndex(x=>x.id===draggedId);
+      const targetIdx = pages.findIndex(x=>x.id===p.id);
+      if(draggedIdx>-1 && targetIdx>-1){
+        const [moved]=pages.splice(draggedIdx,1);
+        pages.splice(targetIdx,0,moved);
+        renderGallery();
+      }
+    });
+    els.gallery.appendChild(card);
+  });
+}
+
+window.rotatePage = async (id)=>{
+  const p = pages.find(x=>x.id===id);
+  if(!p) return;
+  const img = new Image();
+  img.src=p.dataUrl;
+  await img.decode();
+  const c=document.createElement('canvas');
+  c.width=img.height;
+  c.height=img.width;
+  const ctx=c.getContext('2d');
+  ctx.translate(c.width/2,c.height/2);
+  ctx.rotate(90*Math.PI/180);
+  ctx.drawImage(img,-img.width/2,-img.height/2);
+  p.dataUrl=c.toDataURL('image/jpeg',0.9);
+  p.width=c.width;
+  p.height=c.height;
+  renderGallery();
+  updateStats();
+};
+window.deletePage = (id)=>{
+  pages = pages.filter(x=>x.id!==id);
+  renderGallery();
+  updateStats();
+  els.exportBtn.disabled=pages.length===0;
+};
+window.viewPage = (id)=>{
+  const p=pages.find(x=>x.id===id);
+  if(!p) return;
+  const canvas=document.getElementById('splitCanvas');
+  const ctx=canvas.getContext('2d');
+  const img=new Image();
+  img.onload=()=>{
+    canvas.width=img.width;
+    canvas.height=img.height;
+    ctx.drawImage(img,0,0);
+    document.getElementById('splitPreview').classList.add('active');
+    document.getElementById('splitTitle').textContent=`Page ${pages.indexOf(p)+1} - ${p.width}×${p.height}`;
+  };
+  img.src=p.dataUrl;
+};
+
+function updateStats(){
+  els.statPages.textContent=pages.length;
+  // Estimate size: sum of blob sizes * 0.7 (PDF overhead)
+  let totalBytes=0;
+  pages.forEach(p=>{
+    // Approx from dataUrl length
+    totalBytes += Math.floor(p.dataUrl.length*0.75);
+  });
+  const mb = (totalBytes/1024/1024).toFixed(1);
+  els.statSize.textContent=mb+' MB';
+}
+
+document.getElementById('clearBtn').addEventListener('click',()=>{
+  if(confirm('Clear all pages?')){
+    pages=[];
+    inputCount=0;
+    els.statInput.textContent='0';
+    renderGallery();
+    updateStats();
+    els.exportBtn.disabled=true;
+  }
+});
+
+document.getElementById('demoBtn').addEventListener('click', async ()=>{
+  // Load the example image you uploaded if available, else placeholder
+  try{
+    let blob=null;
+    for(const url of ['./example.png','/uploads/IMG_1220.png','./IMG_1220.png']){
+      try{
+        const res = await fetch(url);
+        if(res.ok){ blob = await res.blob(); break; }
+      }catch{}
+    }
+    if(blob){
+      const file = new File([blob], 'IMG_1220.png', {type:'image/png'});
+      await handleFiles([file]);
+    }else{
+      log('Demo: Could not find example image, please upload your own');
+    }
+  }catch(e){
+    log('Demo error: '+e.message);
+  }
+});
+
+// EXPORT PDF
+document.getElementById('exportBtn').addEventListener('click', async ()=>{
+  if(pages.length===0) return;
+  els.exportBtn.disabled=true;
+  els.exportBtn.textContent='⏳ Generating...';
+  setProgress(0, 'Creating PDF ebook...');
+  els.statStatus.textContent='Exporting';
+  
+  try{
+    const pdfDoc = await PDFDocument.create();
+    pdfDoc.setTitle(els.bookTitle.value);
+    pdfDoc.setAuthor(document.getElementById('bookAuthor').value);
+    pdfDoc.setSubject('Ebook created from photos');
+    pdfDoc.setCreator('AI Ebook Maker');
+    
+    const pageSizeOpt = document.getElementById('pageSize').value;
+    const quality = parseFloat(document.getElementById('quality').value);
+    
+    for(let i=0;i<pages.length;i++){
+      setProgress((i/pages.length)*90, `Adding page ${i+1}/${pages.length} to PDF...`);
+      const p = pages[i];
+      const jpgBytes = await fetch(p.dataUrl).then(r=>r.arrayBuffer());
+      let pdfImage;
+      try{
+        pdfImage = await pdfDoc.embedJpg(jpgBytes);
+      }catch{
+        // Try PNG fallback
+        pdfImage = await pdfDoc.embedPng(await fetch(p.dataUrl).then(r=>r.arrayBuffer()));
+      }
+      
+      let pageWidth, pageHeight;
+      if(pageSizeOpt==='A4'){ pageWidth=595.28; pageHeight=841.89; }
+      else if(pageSizeOpt==='A5'){ pageWidth=419.53; pageHeight=595.28; }
+      else if(pageSizeOpt==='LETTER'){ pageWidth=612; pageHeight=792; }
+      else { pageWidth=pdfImage.width; pageHeight=pdfImage.height; }
+      
+      const page = pdfDoc.addPage([pageWidth, pageHeight]);
+      
+      // Fit image inside page with margins
+      const margin=20;
+      const maxW = pageWidth - margin*2;
+      const maxH = pageHeight - margin*2;
+      let imgW = pdfImage.width;
+      let imgH = pdfImage.height;
+      const scale = Math.min(maxW/imgW, maxH/imgH);
+      imgW*=scale;
+      imgH*=scale;
+      const x = (pageWidth - imgW)/2;
+      const y = (pageHeight - imgH)/2;
+      
+      page.drawImage(pdfImage, {x, y, width:imgW, height:imgH});
+      
+      // Add page number
+      if(pageSizeOpt!=='ORIGINAL'){
+        page.drawText(`${i+1}`, {x: pageWidth/2 -5, y: 10, size: 8, color: PDFLib.rgb(0.6,0.6,0.6)});
+      }
+      
+      // Yield
+      await new Promise(r=>setTimeout(r,5));
+    }
+    
+    setProgress(95, 'Finalizing PDF...');
+    const pdfBytes = await pdfDoc.save();
+    const blob = new Blob([pdfBytes], {type:'application/pdf'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url;
+    a.download = (els.bookTitle.value || 'ebook').replace(/[^a-z0-9]/gi,'_')+'.pdf';
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    setProgress(100, `Done! PDF saved (${(blob.size/1024/1024).toFixed(2)} MB)`);
+    log(`✓ Ebook exported: ${pages.length} pages, ${(blob.size/1024/1024).toFixed(2)} MB`);
+    els.statStatus.textContent='Done!';
+    els.statStatus.style.color='var(--green)';
+  }catch(err){
+    log('Export error: '+err.message);
+    console.error(err);
+    alert('Export failed: '+err.message);
+    els.statStatus.textContent='Error';
+    els.statStatus.style.color='var(--red)';
+  }finally{
+    els.exportBtn.disabled=false;
+    els.exportBtn.textContent='📕 Export PDF Ebook';
+    setTimeout(()=>els.progressWrap.style.display='none',3000);
+  }
+});
+
+// Also handle paste of files
+document.addEventListener('paste', async e=>{
+  const files=[...e.clipboardData.files].filter(f=>f.type.startsWith('image/'));
+  if(files.length) await handleFiles(files);
+});
+</script>
+</body>
+</html>

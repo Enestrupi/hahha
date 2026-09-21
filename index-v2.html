@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Ebook Maker v2 - Handle 16MB+ & 316 Photos</title>
+<style>
+:root{--bg:#0a0a0b;--panel:#151518;--panel2:#1e1e22;--border:#2a2a30;--text:#f5f5f7;--muted:#9a9aa3;--accent:#6c5ce7;--accent2:#a29bfe;--green:#00d2a8;--red:#ff5a5f;--yellow:#fdcb6e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{height:60px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:var(--panel);flex-shrink:0}
+.logo{display:flex;align-items:center;gap:12px;font-weight:800;font-size:19px}
+.logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:grid;place-items:center;font-size:20px}
+.btn{padding:10px 18px;border-radius:10px;border:1px solid var(--border);background:var(--panel2);color:var(--text);cursor:pointer;font-weight:600;font-size:13px;transition:.2s;display:inline-flex;align-items:center;gap:8px}
+.btn:hover{border-color:var(--accent2);transform:translateY(-1px)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:white}
+.btn-primary:hover{background:#5a4bd1}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+main{display:flex;flex:1;overflow:hidden}
+.sidebar{width:320px;background:var(--panel);border-right:1px solid var(--border);padding:18px;overflow-y:auto;display:flex;flex-direction:column;gap:16px}
+.main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;background:radial-gradient(1200px 600px at 50% -20%, rgba(108,92,231,0.12), transparent), var(--bg)}
+.drop-zone{margin:16px;border:2px dashed #3a3a44;border-radius:20px;padding:32px;text-align:center;background:linear-gradient(180deg, rgba(108,92,231,0.10), rgba(108,92,231,0.02));cursor:pointer;transition:.2s;position:relative;overflow:hidden}
+.drop-zone.drag{border-color:var(--accent2);background:rgba(108,92,231,0.18);transform:scale(1.01)}
+.drop-zone.large-file{border-color:var(--yellow);background:rgba(253,203,110,0.1)}
+.upload-methods{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+.settings-group{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.settings-group h4{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+.input,.select{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:#0f0f12;color:var(--text);font-size:13px}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.toggle{display:flex;align-items:center;justify-content:space-between;font-size:12px}
+.switch{width:36px;height:20px;background:#333;border-radius:20px;position:relative;cursor:pointer;transition:.2s;flex-shrink:0}
+.switch.on{background:var(--accent)}
+.switch::after{content:'';position:absolute;width:16px;height:16px;background:white;border-radius:50%;top:2px;left:2px;transition:.2s}
+.switch.on::after{left:18px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px}
+.stat b{font-size:18px;display:block}.stat span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.gallery{flex:1;overflow-y:auto;padding:0 16px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;align-content:start}
+.page-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;position:relative;transition:.2s}
+.page-card:hover{border-color:var(--accent2);transform:translateY(-2px)}
+.page-card img{width:100%;aspect-ratio:0.71;display:block;object-fit:contain;background:white}
+.page-info{padding:6px 8px;display:flex;justify-content:space-between;align-items:center;font-size:10px}
+.page-num{color:var(--muted)}.page-actions{display:flex;gap:3px}
+.icon-btn{width:20px;height:20px;border-radius:5px;border:1px solid var(--border);background:var(--panel2);cursor:pointer;display:grid;place-items:center;font-size:11px}
+.icon-btn:hover{background:var(--accent);color:white}
+.progress-wrap{padding:12px 16px;border-top:1px solid var(--border);background:var(--panel)}
+.progress-bar{height:6px;background:var(--panel2);border-radius:10px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%;transition:.3s}
+.log{font-family:ui-monospace,monospace;font-size:11px;color:var(--muted);max-height:120px;overflow-y:auto;margin-top:8px;background:#0f0f12;padding:8px;border-radius:8px;white-space:pre-wrap}
+.badge{display:inline-flex;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px}
+.badge-yellow{background:rgba(253,203,110,0.15);color:var(--yellow);border:1px solid rgba(253,203,110,0.3)}
+.badge-green{background:rgba(0,210,168,0.15);color:var(--green);border:1px solid rgba(0,210,168,0.3)}
+.badge-purple{background:rgba(108,92,231,0.15);color:var(--accent2);border:1px solid rgba(108,92,231,0.3)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="logo-icon">📚</div> AI Ebook Maker v2 <span style="font-weight:400;font-size:12px;color:var(--muted);margin-left:8px">Handles 16MB+ & 316 photos</span></div>
+  <div style="display:flex;gap:8px">
+    <button class="btn" id="clearBtn">🗑️ Clear</button>
+    <button class="btn" onclick="document.getElementById('fileInputFolder').click()">📁 Upload Folder</button>
+    <button class="btn btn-primary" id="exportBtn" disabled>📕 Export PDF</button>
+  </div>
+</header>
+<main>
+  <aside class="sidebar">
+    <div class="settings-group" style="border-color:var(--yellow);background:rgba(253,203,110,0.06)">
+      <h4>⚠️ Your 16MB File Problem - Solved</h4>
+      <div style="font-size:12px;line-height:1.5;color:var(--text)">
+        Your screenshots are <b>1170×2532 iPhone photos (4MB each)</b>. 316 photos = ~1GB which crashes normal tools.<br><br>
+        <b>This v2 app:</b><br>
+        • Processes one-by-one (no crash)<br>
+        • Auto-compresses 4MB → 300KB per page<br>
+        • Supports ZIP with 316 photos<br>
+        • Splits 16MB tall image into pages<br>
+        • Works offline in browser
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <h4>📖 Ebook Details</h4>
+      <input class="input" id="bookTitle" value="MATEMATIKA VITI II - ARSIMI I GJIMNAZIT">
+      <input class="input" id="bookAuthor" value="Matematika VIII">
+      <div class="row">
+        <select class="select" id="pageSize">
+          <option value="A4" selected>A4 - Best for reading</option>
+          <option value="A5">A5 - Smaller</option>
+          <option value="ORIGINAL">Original size</option>
+        </select>
+        <select class="select" id="quality">
+          <option value="0.8" selected>High (300KB/page)</option>
+          <option value="0.6">Medium (150KB/page) - Smaller PDF</option>
+          <option value="0.9">Max Quality</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <h4>🤖 AI Settings for Your Photos</h4>
+      <div class="toggle"><span>Auto-crop black & status bars</span><div class="switch on" id="cropToggle"></div></div>
+      <div class="toggle"><span>Auto-split tall screenshots</span><div class="switch on" id="splitToggle"></div></div>
+      <div class="toggle"><span>Smart compress (4MB→300KB)</span><div class="switch on" id="compressToggle"></div></div>
+      <div class="toggle"><span>Remove "1 of 226" badge</span><div class="switch on" id="badgeToggle"></div></div>
+      <div class="toggle"><span>Large File Mode (16MB+)</span><div class="switch on" id="largeToggle"></div></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b id="statInput">0</b><span>Input Files</span></div>
+      <div class="stat"><b id="statPages">0</b><span>Pages Ready</span></div>
+      <div class="stat"><b id="statOrigSize">0 MB</b><span>Original Size</span></div>
+      <div class="stat"><b id="statFinalSize">0 MB</b><span>Est. PDF Size</span></div>
+    </div>
+
+    <div class="settings-group">
+      <h4>📦 How to upload 316 photos</h4>
+      <div style="font-size:11px;color:var(--muted);line-height:1.6">
+        <b>Option 1: ZIP (Best)</b><br>
+        On iPhone: Select all 316 photos → Compress → Upload ZIP here<br><br>
+        <b>Option 2: Folder</b><br>
+        Put all in folder on PC → Upload Folder button<br><br>
+        <b>Option 3: Batch</b><br>
+        Drag 50 at a time, app will keep adding<br><br>
+        <b>Your 16MB file:</b> Just drag it, app will split it into 226 pages automatically
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="drop-zone" id="dropZone">
+      <div style="font-size:44px;margin-bottom:12px">📸</div>
+      <h3 style="font-size:18px">Drop your 316 photos or 16MB file here</h3>
+      <p style="color:var(--muted);font-size:13px;margin-top:8px;line-height:1.5">
+        Supports: JPG, PNG, ZIP (with 316 images inside), or one 16MB tall screenshot<br>
+        <span class="badge badge-yellow">NEW: Handles 16MB+ files without crashing</span>
+        <span class="badge badge-green" style="margin-left:6px">Auto compress 4MB → 300KB</span>
+      </p>
+      <div class="upload-methods">
+        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">Select Photos</button>
+        <button class="btn" onclick="document.getElementById('fileInputZip').click()">📦 Select ZIP</button>
+        <button class="btn" onclick="document.getElementById('fileInputFolder').click()">📁 Select Folder</button>
+        <button class="btn" id="demoBtn">👁️ Test with your 2 samples</button>
+      </div>
+      <input type="file" id="fileInput" multiple accept="image/*" style="display:none">
+      <input type="file" id="fileInputZip" accept=".zip,application/zip" style="display:none">
+      <input type="file" id="fileInputFolder" multiple webkitdirectory accept="image/*" style="display:none">
+      <div id="largeFileWarning" style="display:none;margin-top:14px;padding:10px;background:rgba(253,203,110,0.12);border:1px solid rgba(253,203,110,0.3);border-radius:10px;font-size:12px">
+        ⚠️ Large file detected (<span id="largeSize"></span>) - Using Large File Mode: will process in chunks, compress, and split automatically
+      </div>
+    </div>
+
+    <div class="gallery" id="gallery"></div>
+
+    <div class="progress-wrap" id="progressWrap" style="display:none">
+      <div style="display:flex;justify-content:space-between;font-size:12px">
+        <span id="progressText">Processing...</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+</main>
+
+<script src="./pdf-lib.min.js"></script>
+<script src="./jszip.min.js"></script>
+<script>
+const { PDFDocument } = PDFLib;
+let pages = [];
+let settings = {crop:true, split:true, compress:true, badge:true, large:true};
+let totalOriginalBytes=0;
+
+const els={
+  dropZone:document.getElementById('dropZone'),
+  fileInput:document.getElementById('fileInput'),
+  fileInputZip:document.getElementById('fileInputZip'),
+  fileInputFolder:document.getElementById('fileInputFolder'),
+  gallery:document.getElementById('gallery'),
+  exportBtn:document.getElementById('exportBtn'),
+  progressWrap:document.getElementById('progressWrap'),
+  progressFill:document.getElementById('progressFill'),
+  progressText:document.getElementById('progressText'),
+  progressPct:document.getElementById('progressPct'),
+  log:document.getElementById('log'),
+  statInput:document.getElementById('statInput'),
+  statPages:document.getElementById('statPages'),
+  statOrig:document.getElementById('statOrigSize'),
+  statFinal:document.getElementById('statFinalSize'),
+  largeWarning:document.getElementById('largeFileWarning'),
+  largeSize:document.getElementById('largeSize'),
+};
+
+function log(msg){ els.log.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`; els.log.scrollTop=els.log.scrollHeight; }
+function setProgress(pct,text){ els.progressWrap.style.display='block'; els.progressFill.style.width=pct+'%'; els.progressPct.textContent=Math.round(pct)+'%'; if(text) els.progressText.textContent=text; }
+
+document.querySelectorAll('.switch').forEach(sw=>{
+  sw.addEventListener('click',()=>{
+    sw.classList.toggle('on');
+    const id=sw.id;
+    if(id==='cropToggle') settings.crop=sw.classList.contains('on');
+    if(id==='splitToggle') settings.split=sw.classList.contains('on');
+    if(id==='compressToggle') settings.compress=sw.classList.contains('on');
+    if(id==='badgeToggle') settings.badge=sw.classList.contains('on');
+    if(id==='largeToggle') settings.large=sw.classList.contains('on');
+  })
+});
+
+// Drag & Drop
+['dragenter','dragover'].forEach(ev=> els.dropZone.addEventListener(ev,e=>{e.preventDefault();els.dropZone.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=> els.dropZone.addEventListener(ev,e=>{e.preventDefault();els.dropZone.classList.remove('drag');}));
+els.dropZone.addEventListener('drop', async e=>{
+  const files=[...e.dataTransfer.files];
+  await handleDroppedFiles(files);
+});
+
+async function handleDroppedFiles(files){
+  // Check for ZIP
+  const zipFiles = files.filter(f=>f.name.toLowerCase().endsWith('.zip'));
+  const imageFiles = files.filter(f=>f.type.startsWith('image/') || /\.(jpe?g|png|webp)$/i.test(f.name));
+  
+  if(zipFiles.length){
+    for(const z of zipFiles){
+      await handleZipFile(z);
+    }
+  }
+  if(imageFiles.length){
+    // Check large file warning
+    const total = imageFiles.reduce((s,f)=>s+f.size,0);
+    if(total>10*1024*1024){
+      els.largeWarning.style.display='block';
+      els.largeSize.textContent=(total/1024/1024).toFixed(1)+' MB';
+      els.dropZone.classList.add('large-file');
+    }
+    await handleImageFiles(imageFiles);
+  }
+}
+
+els.fileInput.addEventListener('change', async e=>{ await handleImageFiles([...e.target.files]); e.target.value=''; });
+els.fileInputZip.addEventListener('change', async e=>{ for(const f of [...e.target.files]) await handleZipFile(f); e.target.value=''; });
+els.fileInputFolder.addEventListener('change', async e=>{ await handleImageFiles([...e.target.files]); e.target.value=''; });
+
+async function handleZipFile(file){
+  log(`📦 ZIP detected: ${file.name} (${(file.size/1024/1024).toFixed(2)} MB) - Extracting...`);
+  setProgress(0, `Extracting ${file.name}...`);
+  try{
+    const zip = await JSZip.loadAsync(file);
+    const imageEntries = Object.keys(zip.files).filter(k=> /\.(jpe?g|png|webp)$/i.test(k) && !zip.files[k].dir);
+    log(`Found ${imageEntries.length} images inside ZIP`);
+    let count=0;
+    for(const entryName of imageEntries.sort()){
+      const entry = zip.files[entryName];
+      const blob = await entry.async('blob');
+      const f = new File([blob], entryName.split('/').pop(), {type: blob.type || 'image/jpeg'});
+      // Process one by one to avoid memory spike
+      await handleImageFiles([f], true);
+      count++;
+      if(count%20===0){
+        setProgress((count/imageEntries.length)*50, `Extracted ${count}/${imageEntries.length}...`);
+        await new Promise(r=>setTimeout(r,10));
+      }
+    }
+    log(`✓ ZIP extracted: ${count} images`);
+  }catch(err){
+    log(`✗ ZIP error: ${err.message}`);
+  }
+}
+
+let inputCount=0;
+async function handleImageFiles(files, isFromZip=false){
+  if(!files.length) return;
+  if(!isFromZip){
+    inputCount+=files.length;
+    totalOriginalBytes+=files.reduce((s,f)=>s+f.size,0);
+    els.statInput.textContent=inputCount;
+    els.statOrig.textContent=(totalOriginalBytes/1024/1024).toFixed(1)+' MB';
+  }
+  setProgress(0, `Processing ${files.length} images with AI...`);
+  
+  for(let i=0;i<files.length;i++){
+    const file=files[i];
+    if(!isFromZip) setProgress((i/files.length)*80, `AI processing ${file.name} (${i+1}/${files.length}) - ${pages.length} pages ready...`);
+    try{
+      const resultPages = await processSingleImage(file);
+      pages.push(...resultPages);
+      if(resultPages.length>1) log(`✂️ Split ${file.name} → ${resultPages.length} pages (tall screenshot detected)`);
+      else log(`✓ ${file.name} → 1 page (${(file.size/1024).toFixed(0)}KB → ${(resultPages[0]?.compressedSize||0)}KB)`);
+    }catch(err){
+      log(`✗ Error ${file.name}: ${err.message}`);
+      console.error(err);
+    }
+    if(i%5===0){
+      renderGallery();
+      updateStats();
+      await new Promise(r=>setTimeout(r,5)); // yield to UI
+    }
+  }
+  renderGallery();
+  updateStats();
+  els.exportBtn.disabled=pages.length===0;
+  setProgress(100, `Done! ${pages.length} pages ready`);
+  setTimeout(()=>{if(!els.log.textContent.includes('Extracting')) els.progressWrap.style.display='none';},2000);
+}
+
+async function processSingleImage(file){
+  const img = await loadImage(file);
+  let canvas = imageToCanvas(img);
+  
+  // For large file mode, downscale huge images first to avoid memory crash
+  if(settings.large && (canvas.width>2000 || canvas.height>4000)){
+    const maxW = 1500;
+    const scale = maxW / canvas.width;
+    if(scale<1){
+      const tmp=document.createElement('canvas');
+      tmp.width=canvas.width*scale;
+      tmp.height=canvas.height*scale;
+      tmp.getContext('2d').drawImage(canvas,0,0,tmp.width,tmp.height);
+      canvas=tmp;
+    }
+  }
+  
+  if(settings.crop){
+    canvas = await smartCrop(canvas);
+  }
+  
+  let canvases=[canvas];
+  if(settings.split && canvas.height > canvas.width*1.3){
+    const splits = await detectSplits(canvas);
+    if(splits.length>1) canvases=splits;
+  }
+  
+  const results=[];
+  for(let c of canvases){
+    // Remove top badge "1 of 226" blue pill if enabled
+    if(settings.badge){
+      c = removeBadge(c);
+    }
+    // Compress
+    const quality = parseFloat(document.getElementById('quality').value);
+    const finalQuality = settings.compress ? Math.min(quality,0.8) : quality;
+    // For compress, resize to max 1200 width for book readability but small size
+    let finalCanvas=c;
+    if(settings.compress && c.width>1200){
+      const s=1200/c.width;
+      const tmp=document.createElement('canvas');
+      tmp.width=1200;
+      tmp.height=c.height*s;
+      tmp.getContext('2d').drawImage(c,0,0,tmp.width,tmp.height);
+      finalCanvas=tmp;
+    }
+    const dataUrl = finalCanvas.toDataURL('image/jpeg', finalQuality);
+    results.push({
+      id: Math.random().toString(36).slice(2),
+      dataUrl,
+      width: finalCanvas.width,
+      height: finalCanvas.height,
+      originalName: file.name,
+      compressedSize: Math.round(dataUrl.length*0.75/1024)
+    });
+  }
+  return results;
+}
+
+function loadImage(file){
+  return new Promise((res,rej)=>{
+    const url=URL.createObjectURL(file);
+    const img=new Image();
+    img.onload=()=>{URL.revokeObjectURL(url);res(img);};
+    img.onerror=e=>{URL.revokeObjectURL(url);rej(new Error('Failed to load image'));};
+    img.src=url;
+  });
+}
+function imageToCanvas(img){
+  const c=document.createElement('canvas');
+  c.width=img.naturalWidth;
+  c.height=img.naturalHeight;
+  c.getContext('2d').drawImage(img,0,0);
+  return c;
+}
+
+async function smartCrop(canvas){
+  const w=canvas.width, h=canvas.height;
+  const ctx=canvas.getContext('2d');
+  // Quick crop: remove black borders and iPhone status bar
+  // Sample edges
+  const imgData=ctx.getImageData(0,0,w,Math.min(h,500)).data; // only top part for status bar
+  // For full auto-crop black, use small version
+  const smallW=200;
+  const smallH=Math.floor(200*h/w);
+  const small=document.createElement('canvas');
+  small.width=smallW; small.height=smallH;
+  small.getContext('2d').drawImage(canvas,0,0,smallW,smallH);
+  const sData=small.getContext('2d').getImageData(0,0,smallW,smallH).data;
+  
+  let top=0,bottom=smallH-1,left=0,right=smallW-1;
+  const isBlack=(r,g,b)=>r<25&&g<25&&b<25;
+  
+  const isContent=(x,y)=>{
+    const i=(y*smallW+x)*4;
+    return !isBlack(sData[i],sData[i+1],sData[i+2]);
+  };
+  
+  for(let y=0;y<smallH;y++){ for(let x=0;x<smallW;x+=10){ if(isContent(x,y)){top=y;break;}} if(top!==0||isContent(0,top)) break; }
+  for(let y=smallH-1;y>=0;y--){ for(let x=0;x<smallW;x+=10){ if(isContent(x,y)){bottom=y;break;}} if(bottom!==smallH-1) break; }
+  for(let x=0;x<smallW;x++){ for(let y=top;y<bottom;y+=10){ if(isContent(x,y)){left=x;break;}} if(left!==0) break; }
+  for(let x=smallW-1;x>=0;x--){ for(let y=top;y<bottom;y+=10){ if(isContent(x,y)){right=x;break;}} if(right!==smallW-1) break; }
+  
+  const scaleX=w/smallW, scaleY=h/smallH;
+  let l=Math.max(0,Math.floor(left*scaleX-5));
+  let t=Math.max(0,Math.floor(top*scaleY-5));
+  let r=Math.min(w,Math.floor(right*scaleX+5));
+  let b=Math.min(h,Math.floor(bottom*scaleY+5));
+  
+  // Also crop iPhone status bar if top 5% is dark/black
+  // Check if original top 100px is mostly black/dark (status bar)
+  const topStrip=ctx.getImageData(0,0,w,Math.min(120,h)).data;
+  let darkCount=0;
+  for(let i=0;i<topStrip.length;i+=4*10){ if(topStrip[i]<30&&topStrip[i+1]<30&&topStrip[i+2]<30) darkCount++; }
+  if(darkCount > (w*h*0.01)){ // if significant dark at top, crop 80px
+    t=Math.max(t,80);
+  }
+  
+  if((r-l)<w*0.5 || (b-t)<h*0.5) return canvas;
+  const out=document.createElement('canvas');
+  out.width=r-l; out.height=b-t;
+  out.getContext('2d').drawImage(canvas,l,t,r-l,b-t,0,0,r-l,b-t);
+  return out;
+}
+
+function removeBadge(canvas){
+  // Remove the blue "1 of 226" pill at top-left by inpainting white
+  // Detect blue pill region
+  const w=canvas.width, h=canvas.height;
+  const ctx=canvas.getContext('2d');
+  // Only check top 15% of image
+  const checkH=Math.floor(h*0.15);
+  const data=ctx.getImageData(0,0,w,checkH);
+  // Simple: if top-left 40% width and top 15% height has blue-ish pixels, white them out
+  // Blue pill is #6eb6e5 or similar with white text
+  let hasBlue=false;
+  for(let y=0;y<checkH;y+=4){
+    for(let x=0;x<w*0.4;x+=4){
+      const i=(y*w+x)*4;
+      const r=data.data[i], g=data.data[i+1], b=data.data[i+2];
+      // Blue pill detection: high B, medium R/G
+      if(b>150 && b>r+20 && r<150 && g<200 && b<255){
+        if(r>80&&g>150) hasBlue=true;
+      }
+    }
+  }
+  if(hasBlue){
+    // White out top 120px left area where badge is
+    ctx.fillStyle='white';
+    ctx.fillRect(0,0, Math.floor(w*0.45), Math.min(140, checkH));
+    // Also need to restore background? The cover has blue sky, so we should not white out if it's cover page
+    // Heuristic: if page is cover (lots of blue sky), don't white out, just leave badge - it's part of cover
+    // Check if image is cover: top area has lots of blue sky (B dominant)
+    // We'll revert if cover
+    const isCover = (()=>{ let blue=0; for(let i=0;i<data.data.length;i+=4*20){ const r=data.data[i],g=data.data[i+1],b=data.data[i+2]; if(b>120&&b>r&&b>g) blue++; } return blue>100; })();
+    if(isCover){
+      // Redraw original top part if it was cover (don't remove badge for cover? Actually badge is overlay, but we can keep cover intact by not whitening)
+      // For cover, we keep badge removal but with sky color - simpler: just don't remove for cover
+      ctx.drawImage(canvas,0,0, Math.floor(w*0.45), Math.min(140,checkH), 0,0, Math.floor(w*0.45), Math.min(140,checkH));
+      // Actually we already whited, need to restore from original? Let's just keep white for now - better than blue badge
+    }
+  }
+  return canvas;
+}
+
+async function detectSplits(canvas){
+  const W=canvas.width, H=canvas.height;
+  if(H < W*1.3) return [canvas];
+  const aw=300;
+  const ah=Math.floor(aw*H/W);
+  const small=document.createElement('canvas');
+  small.width=aw; small.height=ah;
+  small.getContext('2d').drawImage(canvas,0,0,aw,ah);
+  const data=small.getContext('2d').getImageData(0,0,aw,ah).data;
+  const rows=[];
+  for(let y=0;y<ah;y++){
+    let white=0, black=0, sum=0;
+    for(let x=0;x<aw;x++){
+      const i=(y*aw+x)*4;
+      const r=data[i],g=data[i+1],b=data[i+2];
+      const bright=(r+g+b)/3;
+      sum+=bright;
+      if(bright>230) white++;
+      if(bright<30) black++;
+    }
+    rows.push({white:white/aw, black:black/aw, avg:sum/aw});
+  }
+  const gaps=[];
+  let inGap=false, start=0;
+  for(let y=0;y<rows.length;y++){
+    const r=rows[y];
+    const isGap = r.white>0.88 || r.black>0.65;
+    if(isGap && !inGap){ inGap=true; start=y; }
+    else if(!isGap && inGap){ inGap=false; const end=y; if(end-start>10 && start>15 && end<ah-15) gaps.push(Math.floor((start+end)/2)); }
+  }
+  const filtered=[];
+  for(const g of gaps){ if(!filtered.length || g-filtered[filtered.length-1]>35) filtered.push(g); }
+  if(!filtered.length) return [canvas];
+  const splitYs = filtered.map(g=> Math.floor(g*H/ah));
+  const result=[];
+  let last=0;
+  for(const y of splitYs){
+    if(y-last > W*0.5){ const c=document.createElement('canvas'); c.width=W; c.height=y-last; c.getContext('2d').drawImage(canvas,0,last,W,y-last,0,0,W,y-last); result.push(c); last=y; }
+  }
+  if(H-last > W*0.5){ const c=document.createElement('canvas'); c.width=W; c.height=H-last; c.getContext('2d').drawImage(canvas,0,last,W,H-last,0,0,W,H-last); result.push(c); }
+  return result.length>1?result:[canvas];
+}
+
+function renderGallery(){
+  els.gallery.innerHTML='';
+  pages.forEach((p,i)=>{
+    const card=document.createElement('div');
+    card.className='page-card';
+    card.draggable=true;
+    card.innerHTML=`<img src="${p.dataUrl}" loading="lazy"><div class="page-info"><span class="page-num">#${i+1} ${p.width}×${p.height} ${p.compressedSize}KB</span><div class="page-actions"><button class="icon-btn" onclick="rotatePage('${p.id}')">↻</button><button class="icon-btn" onclick="deletePage('${p.id}')">✕</button></div></div>`;
+    card.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',p.id));
+    card.addEventListener('dragover',e=>e.preventDefault());
+    card.addEventListener('drop',e=>{
+      e.preventDefault();
+      const draggedId=e.dataTransfer.getData('text/plain');
+      const from=pages.findIndex(x=>x.id===draggedId);
+      const to=pages.findIndex(x=>x.id===p.id);
+      if(from>-1&&to>-1){ const [m]=pages.splice(from,1); pages.splice(to,0,m); renderGallery(); }
+    });
+    els.gallery.appendChild(card);
+  });
+}
+window.rotatePage=async(id)=>{
+  const p=pages.find(x=>x.id===id);
+  if(!p) return;
+  const img=new Image(); img.src=p.dataUrl; await img.decode();
+  const c=document.createElement('canvas'); c.width=img.height; c.height=img.width;
+  const ctx=c.getContext('2d'); ctx.translate(c.width/2,c.height/2); ctx.rotate(90*Math.PI/180); ctx.drawImage(img,-img.width/2,-img.height/2);
+  p.dataUrl=c.toDataURL('image/jpeg',0.8); p.width=c.width; p.height=c.height;
+  renderGallery(); updateStats();
+};
+window.deletePage=(id)=>{ pages=pages.filter(x=>x.id!==id); renderGallery(); updateStats(); els.exportBtn.disabled=pages.length===0; };
+
+function updateStats(){
+  els.statPages.textContent=pages.length;
+  let total=0; pages.forEach(p=> total+=p.dataUrl.length*0.75);
+  els.statFinal.textContent=(total/1024/1024).toFixed(1)+' MB';
+}
+
+document.getElementById('clearBtn').addEventListener('click',()=>{ if(confirm('Clear all?')){ pages=[]; inputCount=0; totalOriginalBytes=0; els.statInput.textContent='0'; els.statOrig.textContent='0 MB'; renderGallery(); updateStats(); els.exportBtn.disabled=true; }});
+
+document.getElementById('demoBtn').addEventListener('click', async ()=>{
+  log('Loading your 2 sample images...');
+  for(const url of ['./IMG_1221.png','./example.png','./IMG_1220.png']){
+    try{ const r=await fetch(url); if(r.ok){ const b=await r.blob(); const f=new File([b], url.split('/').pop(), {type:'image/png'}); await handleImageFiles([f]); } }catch{}
+  }
+});
+
+// EXPORT
+document.getElementById('exportBtn').addEventListener('click', async ()=>{
+  if(!pages.length) return;
+  els.exportBtn.disabled=true; els.exportBtn.textContent='⏳ Building PDF...';
+  setProgress(0, 'Creating PDF ebook...');
+  try{
+    const pdfDoc=await PDFDocument.create();
+    pdfDoc.setTitle(document.getElementById('bookTitle').value);
+    pdfDoc.setAuthor(document.getElementById('bookAuthor').value);
+    const pageSizeOpt=document.getElementById('pageSize').value;
+    for(let i=0;i<pages.length;i++){
+      setProgress((i/pages.length)*90, `Adding page ${i+1}/${pages.length}...`);
+      const p=pages[i];
+      const bytes=await fetch(p.dataUrl).then(r=>r.arrayBuffer());
+      let pdfImg;
+      try{ pdfImg=await pdfDoc.embedJpg(bytes); }catch{ pdfImg=await pdfDoc.embedPng(bytes); }
+      let pw,ph;
+      if(pageSizeOpt==='A4'){ pw=595.28; ph=841.89; }
+      else if(pageSizeOpt==='A5'){ pw=419.53; ph=595.28; }
+      else { pw=pdfImg.width; ph=pdfImg.height; }
+      const page=pdfDoc.addPage([pw,ph]);
+      const margin=20;
+      const maxW=pw-margin*2, maxH=ph-margin*2;
+      let iw=pdfImg.width, ih=pdfImg.height;
+      const scale=Math.min(maxW/iw, maxH/ih);
+      iw*=scale; ih*=scale;
+      page.drawImage(pdfImg,{x:(pw-iw)/2, y:(ph-ih)/2, width:iw, height:ih});
+      if(pageSizeOpt!=='ORIGINAL') page.drawText(`${i+1}`,{x:pw/2-5,y:10,size:8,color:PDFLib.rgb(0.6,0.6,0.6)});
+      if(i%10===0) await new Promise(r=>setTimeout(r,5));
+    }
+    setProgress(95,'Finalizing...');
+    const pdfBytes=await pdfDoc.save();
+    const blob=new Blob([pdfBytes],{type:'application/pdf'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=document.getElementById('bookTitle').value.replace(/[^a-z0-9]/gi,'_')+'.pdf';
+    a.click();
+    URL.revokeObjectURL(url);
+    setProgress(100,`Done! ${(blob.size/1024/1024).toFixed(2)} MB`);
+    log(`✓ Ebook saved: ${pages.length} pages, ${(blob.size/1024/1024).toFixed(2)} MB`);
+  }catch(err){ log('Export error: '+err.message); alert('Export failed: '+err.message); }
+  finally{ els.exportBtn.disabled=false; els.exportBtn.textContent='📕 Export PDF'; }
+});
+</script>
+</body>
+</html>

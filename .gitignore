@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+.DS_Store
+*.log
+scanned_*.jpg
+improved_*.jpeg
+v2_*.jpeg
+final_*.jpeg
+clean_v2_*.jpeg
+comparison_*.jpeg
+*.pdf
+!MATEMATIKA_II_DEMO*.pdf
+uploads/
+*.zip
