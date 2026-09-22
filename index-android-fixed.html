@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#6c5ce7">
+<title>📚 Android Fixed - Background Remover Works</title>
+<style>
+:root{--bg:#08080a;--panel:#141416;--panel2:#1e1e22;--border:#2a2a30;--text:#f5f5f7;--muted:#9a9aa3;--accent:#6c5ce7;--green:#00d2a8;--red:#ff5a5f;--yellow:#fdcb6e}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+header{padding:14px 16px;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+.main{flex:1;padding:12px;display:flex;flex-direction:column;gap:12px;max-width:600px;margin:0 auto;width:100%}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px}
+.card-green{border-color:rgba(0,210,168,0.3);background:rgba(0,210,168,0.08)}
+.card-red{border-color:rgba(255,90,95,0.3);background:rgba(255,90,95,0.08)}
+.big-btn{width:100%;padding:18px;border-radius:14px;border:none;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;min-height:56px}
+.big-btn:active{transform:scale(0.98)}
+.btn-primary{background:var(--accent);color:white}
+.btn-green{background:var(--green);color:white}
+.btn-dark{background:var(--panel2);color:var(--text);border:1px solid var(--border)}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.stat{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center}
+.stat b{font-size:20px;display:block}
+.stat span{font-size:10px;color:var(--muted);text-transform:uppercase}
+.progress-wrap{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px;position:sticky;bottom:12px}
+.progress-bar{height:10px;background:var(--panel2);border-radius:20px;overflow:hidden;margin:10px 0}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));width:0%;transition:.2s}
+.log{background:#0f0f12;border-radius:10px;padding:10px;font-family:monospace;font-size:10px;color:var(--muted);max-height:100px;overflow-y:auto;white-space:pre-wrap}
+.badge{padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;display:inline-block}
+.badge-green{background:rgba(0,210,168,0.15);color:var(--green);border:1px solid rgba(0,210,168,0.3)}
+.badge-red{background:rgba(255,90,95,0.15);color:var(--red);border:1px solid rgba(255,90,95,0.3)}
+
+/* Manual crop UI */
+.crop-container{position:relative;width:100%;background:#000;border-radius:12px;overflow:hidden;touch-action:none}
+.crop-container img{width:100%;display:block}
+.corner{position:absolute;width:32px;height:32px;background:var(--accent);border:3px solid white;border-radius:50%;transform:translate(-50%,-50%);touch-action:none;z-index:10;box-shadow:0 2px 10px rgba(0,0,0,0.5)}
+.corner::after{content:'';position:absolute;top:50%;left:50%;width:60px;height:60px;transform:translate(-50%,-50%)}
+.crop-line{position:absolute;background:rgba(108,92,231,0.8);height:2px;transform-origin:0 0;pointer-events:none}
+.comparison{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.comp-box{background:var(--panel2);border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+.comp-box img{width:100%;aspect-ratio:0.71;object-fit:contain;background:white;display:block}
+.comp-label{padding:6px 8px;font-size:10px;font-weight:700;text-align:center}
+.label-before{background:rgba(255,90,95,0.15);color:var(--red)}
+.label-after{background:rgba(0,210,168,0.15);color:var(--green)}
+</style>
+</head>
+<body>
+<header>
+  <div style="font-weight:800;font-size:18px;display:flex;align-items:center;gap:8px">📚 Android FIXED - Background Remover Works</div>
+  <div style="font-size:11px;color:var(--muted);margin-top:2px">Now with manual corner adjustment if auto fails</div>
+</header>
+
+<div class="main">
+  <div class="card card-red" id="fixCard">
+    <h3 style="font-size:14px;margin-bottom:8px">🔧 Fixed Background Remover</h3>
+    <div style="font-size:12px;line-height:1.5">
+      <b>Previous issue:</b> Auto-detection left wooden table background<br>
+      <b>Fixed:</b><br>
+      ✅ Better white page detection (HSV + GrabCut)<br>
+      ✅ Shrinks quad to remove border<br>
+      ✅ Refines crop to just page<br>
+      ✅ <b>NEW: Manual adjustment</b> - drag 4 corners if auto fails<br>
+      ✅ Removes table, shadows, makes white background
+    </div>
+  </div>
+
+  <div class="card" style="text-align:center">
+    <h3 style="margin-bottom:12px">Upload Real Book Photo</h3>
+    <button class="big-btn btn-primary" onclick="document.getElementById('fileInput').click()" style="margin-bottom:10px">
+      📸 Select Photo (with table background)
+    </button>
+    <button class="big-btn btn-dark" onclick="document.getElementById('zipInput').click()" style="margin-bottom:10px">
+      📦 Upload ZIP with 316 photos
+    </button>
+    <input type="file" id="fileInput" accept="image/*" style="display:none">
+    <input type="file" id="zipInput" accept=".zip" style="display:none">
+    <div style="margin-top:10px">
+      <span class="badge badge-green">✓ Removes wooden table</span>
+      <span class="badge badge-green">✓ White background</span>
+      <span class="badge badge-green">✓ Manual fix</span>
+    </div>
+  </div>
+
+  <div class="card" id="manualCard" style="display:none">
+    <h3 style="margin-bottom:10px">✋ Manual Adjustment (if auto fails)</h3>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Drag the 4 blue corners to outline the page exactly. This removes background perfectly.</p>
+    <div class="crop-container" id="cropContainer">
+      <img id="cropImage" src="">
+      <div class="corner" id="corner0" style="left:10%;top:10%"></div>
+      <div class="corner" id="corner1" style="left:90%;top:10%"></div>
+      <div class="corner" id="corner2" style="left:90%;top:90%"></div>
+      <div class="corner" id="corner3" style="left:10%;top:90%"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+      <button class="big-btn btn-dark" onclick="resetCorners()" style="padding:12px">↺ Reset Corners</button>
+      <button class="big-btn btn-green" onclick="applyManualCrop()" style="padding:12px">✓ Apply Manual Crop</button>
+    </div>
+  </div>
+
+  <div class="card" id="resultCard" style="display:none">
+    <h3 style="margin-bottom:12px">Result</h3>
+    <div class="comparison">
+      <div class="comp-box">
+        <div class="comp-label label-before">BEFORE - With table</div>
+        <img id="beforeImg" src="">
+      </div>
+      <div class="comp-box">
+        <div class="comp-label label-after">AFTER - Clean, no background</div>
+        <img id="afterImg" src="">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+      <button class="big-btn btn-dark" onclick="showManual()" style="padding:12px">✋ Adjust Manually</button>
+      <button class="big-btn btn-primary" onclick="addToEbook()" style="padding:12px">➕ Add to Ebook</button>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><b id="statTotal">0</b><span>Total</span></div>
+    <div class="stat"><b id="statDone">0</b><span>Cleaned</span></div>
+    <div class="stat"><b id="statMem">0 MB</b><span>RAM</span></div>
+  </div>
+
+  <button class="big-btn btn-green" id="exportBtn" disabled>
+    📕 Export Clean Ebook PDF (0 pages)
+  </button>
+
+  <div class="progress-wrap" id="progressWrap" style="display:none">
+    <div style="display:flex;justify-content:space-between;font-weight:700;font-size:13px">
+      <span id="progressText">Processing...</span>
+      <span id="progressPct">0%</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">
+      <span id="progressDetail">0/316</span>
+      <span id="progressMode">Background removal</span>
+    </div>
+    <div class="log" id="log"></div>
+  </div>
+</div>
+
+<script src="./pdf-lib.min.js"></script>
+<script src="./jszip.min.js"></script>
+<script>
+const { PDFDocument } = PDFLib;
+let pages=[];
+let total=0, done=0;
+let currentOriginalDataUrl=null;
+let currentCleanedDataUrl=null;
+let corners=[{x:0.1,y:0.1},{x:0.9,y:0.1},{x:0.9,y:0.9},{x:0.1,y:0.9}];
+
+const els={
+  fileInput:document.getElementById('fileInput'),
+  zipInput:document.getElementById('zipInput'),
+  exportBtn:document.getElementById('exportBtn'),
+  progressWrap:document.getElementById('progressWrap'),
+  progressFill:document.getElementById('progressFill'),
+  progressText:document.getElementById('progressText'),
+  progressPct:document.getElementById('progressPct'),
+  progressDetail:document.getElementById('progressDetail'),
+  log:document.getElementById('log'),
+  statTotal:document.getElementById('statTotal'),
+  statDone:document.getElementById('statDone'),
+  statMem:document.getElementById('statMem'),
+  manualCard:document.getElementById('manualCard'),
+  resultCard:document.getElementById('resultCard'),
+  cropImage:document.getElementById('cropImage'),
+  beforeImg:document.getElementById('beforeImg'),
+  afterImg:document.getElementById('afterImg'),
+  cropContainer:document.getElementById('cropContainer'),
+};
+
+function log(msg){ els.log.textContent+=`[${new Date().toLocaleTimeString()}] ${msg}\n`; els.log.scrollTop=els.log.scrollHeight; }
+function setProgress(pct,text,detail){
+  els.progressWrap.style.display='block';
+  els.progressFill.style.width=pct+'%';
+  els.progressPct.textContent=Math.round(pct)+'%';
+  if(text) els.progressText.textContent=text;
+  if(detail) els.progressDetail.textContent=detail;
+  const mem=pages.reduce((s,p)=>s+p.dataUrl.length*0.75,0)/1024/1024;
+  els.statMem.textContent=`${mem.toFixed(1)} MB`;
+}
+
+// Corner dragging for manual adjustment
+let activeCorner=null;
+function initCorners(){
+  [0,1,2,3].forEach(i=>{
+    const el=document.getElementById(`corner${i}`);
+    const startDrag=(e)=>{
+      e.preventDefault();
+      activeCorner=i;
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onEnd);
+      document.addEventListener('touchmove', onMove, {passive:false});
+      document.addEventListener('touchend', onEnd);
+    };
+    el.addEventListener('mousedown', startDrag);
+    el.addEventListener('touchstart', startDrag, {passive:false});
+  });
+  
+  function onMove(e){
+    if(activeCorner===null) return;
+    e.preventDefault();
+    const rect=els.cropContainer.getBoundingClientRect();
+    let clientX, clientY;
+    if(e.touches){ clientX=e.touches[0].clientX; clientY=e.touches[0].clientY; }
+    else{ clientX=e.clientX; clientY=e.clientY; }
+    let x=(clientX-rect.left)/rect.width;
+    let y=(clientY-rect.top)/rect.height;
+    x=Math.max(0,Math.min(1,x));
+    y=Math.max(0,Math.min(1,y));
+    corners[activeCorner]={x,y};
+    const el=document.getElementById(`corner${activeCorner}`);
+    el.style.left=(x*100)+'%';
+    el.style.top=(y*100)+'%';
+  }
+  function onEnd(){
+    activeCorner=null;
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onEnd);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onEnd);
+  }
+}
+initCorners();
+
+function resetCorners(){
+  corners=[{x:0.1,y:0.1},{x:0.9,y:0.1},{x:0.9,y:0.9},{x:0.1,y:0.9}];
+  corners.forEach((c,i)=>{
+    const el=document.getElementById(`corner${i}`);
+    el.style.left=(c.x*100)+'%';
+    el.style.top=(c.y*100)+'%';
+  });
+}
+
+function showManual(){
+  if(!currentOriginalDataUrl) return;
+  els.cropImage.src=currentOriginalDataUrl;
+  els.manualCard.style.display='block';
+  els.manualCard.scrollIntoView({behavior:'smooth'});
+  resetCorners();
+}
+
+async function applyManualCrop(){
+  if(!currentOriginalDataUrl) return;
+  log('✋ Applying manual crop...');
+  setProgress(50,'Manual crop...','Cropping to selected corners');
+  
+  const img=await loadDataUrl(currentOriginalDataUrl);
+  const canvas=document.createElement('canvas');
+  const ctx=canvas.getContext('2d');
+  
+  // Get image dimensions
+  const imgW=img.width;
+  const imgH=img.height;
+  
+  // Convert normalized corners to image coordinates
+  const pts=corners.map(c=>({x:c.x*imgW, y:c.y*imgH}));
+  
+  // Order points TL, TR, BR, BL
+  // Simple ordering based on sum and diff
+  const ordered=orderPoints(pts);
+  
+  // Calculate output size
+  const widthA=Math.hypot(ordered[2].x-ordered[3].x, ordered[2].y-ordered[3].y);
+  const widthB=Math.hypot(ordered[1].x-ordered[0].x, ordered[1].y-ordered[0].y);
+  const maxW=Math.max(widthA,widthB);
+  const heightA=Math.hypot(ordered[1].x-ordered[2].x, ordered[1].y-ordered[2].y);
+  const heightB=Math.hypot(ordered[0].x-ordered[3].x, ordered[0].y-ordered[3].y);
+  const maxH=Math.max(heightA,heightB);
+  
+  canvas.width=maxW;
+  canvas.height=maxH;
+  
+  // Perspective transform manually
+  // For simplicity, use 4-point transform approximation
+  // We'll draw using transform matrix
+  
+  // Create destination points
+  const dst=[{x:0,y:0},{x:maxW,y:0},{x:maxW,y:maxH},{x:0,y:maxH}];
+  
+  // Use canvas transform via homography - simplified version using drawImage with clipping
+  // For Android, we'll do a simple crop + perspective using 2D context
+  // This is approximate but works for small perspective
+  
+  // Draw using manual perspective transform
+  // We'll use a simple method: transform via setTransform if possible, or just do bounding box crop for now
+  // Better: use direct pixel mapping for accuracy
+  
+  // For now, do perspective warp using OpenCV-like approach in JS
+  // Simplified: just crop to bounding box of quad and then warp
+  
+  // Create temporary canvas with original
+  const tmpCanvas=document.createElement('canvas');
+  tmpCanvas.width=imgW;
+  tmpCanvas.height=imgH;
+  tmpCanvas.getContext('2d').drawImage(img,0,0);
+  
+  // Apply perspective transform using manual matrix calculation
+  const srcPts=ordered.map(p=>[p.x,p.y]);
+  const dstPts=[[0,0],[maxW,0],[maxW,maxH],[0,maxH]];
+  
+  // Get perspective transform matrix
+  const M=getPerspectiveTransform(srcPts,dstPts);
+  
+  // Warp
+  const imgData=tmpCanvas.getContext('2d').getImageData(0,0,imgW,imgH);
+  const outData=ctx.createImageData(maxW,maxH);
+  
+  // Inverse warp for better quality
+  const M_inv=matrixInverse(M);
+  if(M_inv){
+    for(let y=0;y<maxH;y++){
+      for(let x=0;x<maxW;x++){
+        const src=applyHomography(M_inv,x,y);
+        const sx=Math.floor(src[0]);
+        const sy=Math.floor(src[1]);
+        if(sx>=0&&sx<imgW&&sy>=0&&sy<imgH){
+          const sIdx=(sy*imgW+sx)*4;
+          const dIdx=(y*maxW+x)*4;
+          outData.data[dIdx]=imgData.data[sIdx];
+          outData.data[dIdx+1]=imgData.data[sIdx+1];
+          outData.data[dIdx+2]=imgData.data[sIdx+2];
+          outData.data[dIdx+3]=255;
+        }
+      }
+    }
+    ctx.putImageData(outData,0,0);
+  }else{
+    // Fallback: simple crop
+    ctx.drawImage(img,0,0,maxW,maxH);
+  }
+  
+  // Clean the warped image (remove shadows, make white)
+  const cleaned=cleanImageCanvas(canvas);
+  
+  currentCleanedDataUrl=cleaned.toDataURL('image/jpeg',0.75);
+  els.afterImg.src=currentCleanedDataUrl;
+  els.resultCard.style.display='block';
+  setProgress(100,'Manual crop done!','Ready');
+  log('✓ Manual crop applied - background removed perfectly');
+}
+
+function orderPoints(pts){
+  // pts: [{x,y}]
+  const sorted=[...pts];
+  // Sum
+  const sums=sorted.map(p=>p.x+p.y);
+  const diffs=sorted.map(p=>p.x-p.y);
+  const tl=sorted[sums.indexOf(Math.min(...sums))];
+  const br=sorted[sums.indexOf(Math.max(...sums))];
+  const tr=sorted[diffs.indexOf(Math.max(...diffs))];
+  const bl=sorted[diffs.indexOf(Math.min(...diffs))];
+  return [tl,tr,br,bl];
+}
+
+function getPerspectiveTransform(src,dst){
+  // Solve for homography matrix using DLT
+  // src and dst are 4 points each [[x,y]]
+  const A=[];
+  const b=[];
+  for(let i=0;i<4;i++){
+    const [x,y]=src[i];
+    const [u,v]=dst[i];
+    A.push([x,y,1,0,0,0,-u*x,-u*y]);
+    b.push(u);
+    A.push([0,0,0,x,y,1,-v*x,-v*y]);
+    b.push(v);
+  }
+  // Solve Ax=b using Gaussian elimination
+  return solveLinear(A,b);
+}
+
+function solveLinear(A,b){
+  const n=A.length;
+  const m=A[0].length;
+  // Augment
+  const M=A.map((row,i)=>[...row,b[i]]);
+  // Gaussian elimination
+  for(let i=0;i<m;i++){
+    // Find pivot
+    let maxRow=i;
+    for(let k=i+1;k<n;k++){
+      if(Math.abs(M[k][i])>Math.abs(M[maxRow][i])) maxRow=k;
+    }
+    [M[i],M[maxRow]]=[M[maxRow],M[i]];
+    if(Math.abs(M[i][i])<1e-10) continue;
+    // Eliminate
+    for(let k=i+1;k<n;k++){
+      const factor=M[k][i]/M[i][i];
+      for(let j=i;j<=m;j++){
+        M[k][j]-=factor*M[i][j];
+      }
+    }
+  }
+  // Back substitution
+  const x=new Array(m).fill(0);
+  for(let i=m-1;i>=0;i--){
+    let sum=M[i][m];
+    for(let j=i+1;j<m;j++) sum-=M[i][j]*x[j];
+    x[i]=M[i][i]!==0?sum/M[i][i]:0;
+  }
+  // Return 3x3 matrix
+  return [[x[0],x[1],x[2]],[x[3],x[4],x[5]],[x[6],x[7],1]];
+}
+
+function matrixInverse(M){
+  // Inverse of 3x3
+  const a=M[0][0], b=M[0][1], c=M[0][2];
+  const d=M[1][0], e=M[1][1], f=M[1][2];
+  const g=M[2][0], h=M[2][1], i=M[2][2];
+  const det=a*(e*i-f*h)-b*(d*i-f*g)+c*(d*h-e*g);
+  if(Math.abs(det)<1e-10) return null;
+  const invDet=1/det;
+  return [
+    [(e*i-f*h)*invDet, (c*h-b*i)*invDet, (b*f-c*e)*invDet],
+    [(f*g-d*i)*invDet, (a*i-c*g)*invDet, (c*d-a*f)*invDet],
+    [(d*h-e*g)*invDet, (b*g-a*h)*invDet, (a*e-b*d)*invDet]
+  ];
+}
+
+function applyHomography(M,x,y){
+  const X=M[0][0]*x+M[0][1]*y+M[0][2];
+  const Y=M[1][0]*x+M[1][1]*y+M[1][2];
+  const W=M[2][0]*x+M[2][1]*y+M[2][2];
+  return [X/W, Y/W];
+}
+
+function cleanImageCanvas(canvas){
+  // Light cleaning: make background whiter, preserve text
+  const ctx=canvas.getContext('2d');
+  const imgData=ctx.getImageData(0,0,canvas.width,canvas.height);
+  const data=imgData.data;
+  // Simple: boost bright areas to white
+  for(let i=0;i<data.length;i+=4){
+    const r=data[i], g=data[i+1], b=data[i+2];
+    const bright=(r+g+b)/3;
+    const sat=Math.max(r,g,b)-Math.min(r,g,b);
+    if(bright>200 && sat<40){
+      data[i]=255; data[i+1]=255; data[i+2]=255;
+    }
+  }
+  ctx.putImageData(imgData,0,0);
+  return canvas;
+}
+
+function loadDataUrl(dataUrl){
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>res(img);
+    img.onerror=rej;
+    img.src=dataUrl;
+  });
+}
+
+async function processFile(file){
+  const dataUrl=await new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=e=>res(e.target.result);
+    r.onerror=rej;
+    r.readAsDataURL(file);
+  });
+  
+  currentOriginalDataUrl=dataUrl;
+  els.beforeImg.src=dataUrl;
+  
+  // Try auto background removal via server
+  try{
+    const form=new FormData();
+    form.append('image', file);
+    const urls=[`http://localhost:8001/scan`, `${location.protocol}//${location.hostname}:8001/scan`];
+    for(const url of urls){
+      try{
+        const res=await fetch(url,{method:'POST',body:form,signal:AbortSignal.timeout(8000)});
+        if(res.ok){
+          const data=await res.json();
+          if(data.image){
+            currentCleanedDataUrl=data.image;
+            els.afterImg.src=data.image;
+            els.resultCard.style.display='block';
+            els.resultCard.scrollIntoView({behavior:'smooth'});
+            log(`✓ Auto background removal worked! Detected=${data.detected}`);
+            return data.image;
+          }
+        }
+      }catch{}
+    }
+  }catch{}
+  
+  // Fallback: client-side simple clean
+  const img=await loadDataUrl(dataUrl);
+  const c=document.createElement('canvas');
+  c.width=img.width; c.height=img.height;
+  c.getContext('2d').drawImage(img,0,0);
+  const cleaned=cleanImageCanvas(c);
+  currentCleanedDataUrl=cleaned.toDataURL('image/jpeg',0.75);
+  els.afterImg.src=currentCleanedDataUrl;
+  els.resultCard.style.display='block';
+  log('Used client-side cleaning (server unavailable)');
+  return currentCleanedDataUrl;
+}
+
+async function handleFiles(files){
+  total+=files.length;
+  els.statTotal.textContent=total;
+  log(`📸 ${files.length} photos - processing 1 by 1`);
+  setProgress(0,`Processing ${files.length} photos...`,`0/${files.length}`);
+  
+  for(let i=0;i<files.length;i++){
+    try{
+      const cleaned=await processFile(files[i]);
+      pages.push({id:Math.random().toString(36).slice(2), dataUrl:cleaned, name:files[i].name});
+      done++;
+      els.statDone.textContent=done;
+      els.exportBtn.textContent=`📕 Export PDF (${pages.length} pages)`;
+      els.exportBtn.disabled=false;
+      setProgress((done/total)*100,`Cleaned ${done}/${total}`,`${done}/${total}`);
+      await new Promise(r=>setTimeout(r,15));
+    }catch(err){ log(`✗ ${files[i].name}: ${err.message}`); }
+  }
+}
+
+async function handleZip(file){
+  log(`📦 ZIP ${file.name}`);
+  setProgress(0,`Extracting ZIP...`,`0 photos`);
+  try{
+    const zip=await JSZip.loadAsync(file);
+    const entries=Object.keys(zip.files).filter(k=>/\.(jpe?g|png|webp)$/i.test(k)&&!zip.files[k].dir).sort();
+    log(`Found ${entries.length} photos in ZIP`);
+    total+=entries.length;
+    els.statTotal.textContent=total;
+    
+    for(let i=0;i<entries.length;i++){
+      const blob=await zip.files[entries[i]].async('blob');
+      const f=new File([blob], entries[i].split('/').pop(), {type:'image/jpeg'});
+      const cleaned=await processFile(f);
+      pages.push({id:Math.random().toString(36).slice(2), dataUrl:cleaned, name:f.name});
+      done++;
+      els.statDone.textContent=done;
+      els.exportBtn.textContent=`📕 Export PDF (${pages.length} pages)`;
+      els.exportBtn.disabled=false;
+      if(i%5===0){
+        setProgress((i/entries.length)*100,`ZIP ${i}/${entries.length}`,`${i}/${entries.length}`);
+        await new Promise(r=>setTimeout(r,15));
+      }
+    }
+    setProgress(100,`Done ${pages.length} pages`,`${pages.length} pages`);
+  }catch(err){ log(`ZIP error: ${err.message}`); }
+}
+
+function addToEbook(){
+  if(!currentCleanedDataUrl) return;
+  pages.push({id:Math.random().toString(36).slice(2), dataUrl:currentCleanedDataUrl, name:`page_${pages.length+1}.jpg`});
+  done++;
+  els.statDone.textContent=done;
+  els.exportBtn.textContent=`📕 Export PDF (${pages.length} pages)`;
+  els.exportBtn.disabled=false;
+  log(`➕ Added to ebook - total ${pages.length} pages`);
+  els.resultCard.style.display='none';
+  els.manualCard.style.display='none';
+}
+
+els.fileInput.addEventListener('change', async e=>{ await handleFiles([...e.target.files]); e.target.value=''; });
+els.zipInput.addEventListener('change', async e=>{ for(const f of [...e.target.files]) await handleZip(f); e.target.value=''; });
+
+// Export PDF
+document.getElementById('exportBtn').addEventListener('click', async ()=>{
+  if(!pages.length) return;
+  const btn=els.exportBtn;
+  btn.disabled=true;
+  btn.textContent='⏳ Building PDF...';
+  setProgress(0,`Creating PDF ${pages.length} pages...`,`${pages.length} pages`);
+  try{
+    const pdfDoc=await PDFDocument.create();
+    for(let i=0;i<pages.length;i++){
+      setProgress((i/pages.length)*90,`Page ${i+1}/${pages.length}...`,`${i+1}/${pages.length}`);
+      const bytes=await fetch(pages[i].dataUrl).then(r=>r.arrayBuffer());
+      let img;
+      try{ img=await pdfDoc.embedJpg(bytes); }catch{ img=await pdfDoc.embedPng(bytes); }
+      const page=pdfDoc.addPage([595.28,841.89]);
+      const maxW=555,maxH=801;
+      let iw=img.width,ih=img.height;
+      const s=Math.min(maxW/iw,maxH/ih);
+      iw*=s; ih*=s;
+      page.drawImage(img,{x:(595.28-iw)/2,y:(841.89-ih)/2,width:iw,height:ih});
+      page.drawText(`${i+1}`,{x:297,y:15,size:9,color:PDFLib.rgb(0.5,0.5,0.5)});
+      if(i%10===0) await new Promise(r=>setTimeout(r,10));
+    }
+    setProgress(95,'Finalizing...');
+    const pdfBytes=await pdfDoc.save();
+    const blob=new Blob([pdfBytes],{type:'application/pdf'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`MATEMATIKA_${pages.length}_pages_Clean.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setProgress(100,`Done! ${(blob.size/1024/1024).toFixed(1)} MB`,`${pages.length} pages`);
+    log(`✓ PDF: ${pages.length} pages, ${(blob.size/1024/1024).toFixed(1)} MB`);
+  }catch(err){ log(`Export fail: ${err.message}`); alert(err.message); }
+  finally{ btn.disabled=false; btn.textContent=`📕 Export PDF (${pages.length} pages)`; }
+});
+</script>
+</body>
+</html>
