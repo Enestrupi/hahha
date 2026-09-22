@@ -59,6 +59,13 @@ header{padding:14px;background:#151518;border-bottom:1px solid #2a2a30;position:
 
   <div class="card" id="cropCard" style="display:none">
     <h4 style="margin-bottom:10px">✋ Draw box around the page (drag corners)</h4>
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+      <button class="big-btn btn-dark" onclick="rotateImage(-90)" style="padding:10px;flex:1;min-height:44px">↺ 90° Left</button>
+      <button class="big-btn btn-dark" onclick="rotateImage(90)" style="padding:10px;flex:1;min-height:44px">↻ 90° Right</button>
+      <button class="big-btn btn-dark" onclick="rotateImage(180)" style="padding:10px;flex:1;min-height:44px">↻ 180°</button>
+      <button class="big-btn btn-dark" onclick="rotateImage(-5)" style="padding:10px;flex:0.7;min-height:44px">-5°</button>
+      <button class="big-btn btn-dark" onclick="rotateImage(5)" style="padding:10px;flex:0.7;min-height:44px">+5°</button>
+    </div>
     <div class="crop-area" id="cropArea">
       <img id="cropImg" src="">
       <div class="selection" id="selection" style="left:10%;top:10%;width:80%;height:80%">
@@ -69,7 +76,7 @@ header{padding:14px;background:#151518;border-bottom:1px solid #2a2a30;position:
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
-      <button class="big-btn btn-dark" onclick="resetSelection()" style="padding:12px">↺ Reset</button>
+      <button class="big-btn btn-dark" onclick="resetSelection()" style="padding:12px">↺ Reset Box</button>
       <button class="big-btn btn-green" onclick="cropAndClean()" style="padding:12px">✓ Crop & Clean</button>
     </div>
   </div>
@@ -107,6 +114,8 @@ const { PDFDocument } = PDFLib;
 let pages=[];
 let currentOriginal=null;
 let currentCleaned=null;
+let currentOriginalFile=null;
+let currentRotation=0;
 let selection={x:0.1,y:0.1,w:0.8,h:0.8};
 let isDragging=false, dragHandle=null, dragType=null, startX, startY, startSel;
 
@@ -223,6 +232,8 @@ initSelection();
 els.fileInput.addEventListener('change', async e=>{
   const file=e.target.files[0];
   if(!file) return;
+  currentOriginalFile=file;
+  currentRotation=0;
   const dataUrl=await new Promise((res,rej)=>{
     const r=new FileReader();
     r.onload=e=>res(e.target.result);
@@ -236,9 +247,45 @@ els.fileInput.addEventListener('change', async e=>{
   els.resultCard.style.display='none';
   resetSelection();
   els.cropCard.scrollIntoView({behavior:'smooth'});
-  log(`Loaded ${file.name}`);
+  log(`Loaded ${file.name} - Use rotate buttons if not straight`);
   e.target.value='';
 });
+
+window.rotateImage=async (deg)=>{
+  if(!currentOriginal) return;
+  currentRotation=(currentRotation+deg)%360;
+  log(`Rotating ${deg}° - Total: ${currentRotation}°`);
+  
+  const img=new Image();
+  img.src=currentOriginal;
+  await new Promise(r=>img.onload=r);
+  
+  const canvas=document.createElement('canvas');
+  const ctx=canvas.getContext('2d');
+  
+  // Handle 90 degree rotations (swap width/height)
+  const rad=currentRotation*Math.PI/180;
+  const absRot=Math.abs(currentRotation)%360;
+  
+  if(absRot===90 || absRot===270){
+    canvas.width=img.naturalHeight;
+    canvas.height=img.naturalWidth;
+  }else{
+    canvas.width=img.naturalWidth;
+    canvas.height=img.naturalHeight;
+  }
+  
+  ctx.translate(canvas.width/2, canvas.height/2);
+  ctx.rotate(rad);
+  ctx.drawImage(img, -img.naturalWidth/2, -img.naturalHeight/2);
+  
+  const rotatedDataUrl=canvas.toDataURL('image/jpeg',0.9);
+  currentOriginal=rotatedDataUrl;
+  els.cropImg.src=rotatedDataUrl;
+  els.beforeImg.src=rotatedDataUrl;
+  resetSelection();
+  log(`✓ Rotated to ${currentRotation}°`);
+};
 
 window.cropAndClean=async ()=>{
   if(!currentOriginal) return;
